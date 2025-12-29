@@ -45,7 +45,18 @@ if (host === "localhost") {
 
 export default defineConfig({
   root: dirname(fileURLToPath(import.meta.url)),
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: "html-transform",
+      transformIndexHtml(html) {
+        return html.replace(
+          /%SHOPIFY_API_KEY%/g,
+          process.env.SHOPIFY_API_KEY || ""
+        );
+      },
+    },
+  ],
   resolve: {
     preserveSymlinks: true,
   },
@@ -54,7 +65,6 @@ export default defineConfig({
     port: process.env.FRONTEND_PORT,
     hmr: hmrConfig,
     proxy: {
-      "^/(\\?.*)?$": proxyOptions,
       "^/api(/|(\\?.*)?$)": proxyOptions,
       "^/banners(\\?.*)?$": proxyOptions,
     },

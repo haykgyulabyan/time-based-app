@@ -19,10 +19,6 @@ import {
   Icon,
   ButtonGroup,
   Divider,
-  InlineStack,
-  BlockStack,
-  Box,
-  Tag,
   Collapsible,
   ChoiceList,
 } from "@shopify/polaris";
@@ -306,8 +302,8 @@ export default function CreateAnnouncementBar() {
 
     return (
       <LegacyCard key={line.id} sectioned>
-        <BlockStack gap="400">
-          <InlineStack align="space-between">
+        <LegacyStack vertical spacing="loose">
+          <LegacyStack distribution="equalSpacing">
             <Text variant="headingSm" as="h3">
               Line {index + 1}
             </Text>
@@ -319,7 +315,7 @@ export default function CreateAnnouncementBar() {
                 onClick={() => removeContentLine(line.id)}
               />
             )}
-          </InlineStack>
+          </LegacyStack>
 
           <Tabs
             tabs={tabs}
@@ -352,7 +348,7 @@ export default function CreateAnnouncementBar() {
               helpText="You can use basic HTML tags for formatting (bold, italic, links)"
             />
           </FormLayout>
-        </BlockStack>
+        </LegacyStack>
       </LegacyCard>
     );
   };
@@ -428,13 +424,13 @@ export default function CreateAnnouncementBar() {
         <Layout.Section>
           <LegacyCard title={t("AnnouncementBar.form.content")}>
             <LegacyCard.Section>
-              <BlockStack gap="400">
+              <LegacyStack vertical spacing="loose">
                 {contentLines.map((line, index) => renderContentLine(line, index))}
 
                 <Button icon={PlusIcon} onClick={addContentLine}>
                   {t("AnnouncementBar.form.addLine")}
                 </Button>
-              </BlockStack>
+              </LegacyStack>
             </LegacyCard.Section>
           </LegacyCard>
         </Layout.Section>
@@ -610,7 +606,7 @@ export default function CreateAnnouncementBar() {
         {/* Assignment */}
         <Layout.Section>
           <LegacyCard title={t("AnnouncementBar.form.assignment")} sectioned>
-            <BlockStack gap="400">
+            <LegacyStack vertical spacing="loose">
               <Text variant="bodyMd" as="p" tone="subdued">
                 {t("AnnouncementBar.form.assignmentDescription")}
               </Text>
@@ -670,7 +666,7 @@ export default function CreateAnnouncementBar() {
                   </div>
                 )}
               </div>
-            </BlockStack>
+            </LegacyStack>
           </LegacyCard>
         </Layout.Section>
       </Layout>

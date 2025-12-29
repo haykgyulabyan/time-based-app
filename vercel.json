@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "framework": null,
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace=time-based-app-frontend",
+  "outputDirectory": ".",
+  "builds": [
+    {
+      "src": "web/index.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["web/frontend/dist/**"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/web/index.js"
+    }
+  ]
+}
