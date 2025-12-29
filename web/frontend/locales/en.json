@@ -1,0 +1,87 @@
+{
+  "App": {
+    "title": "Time-based App"
+  },
+  "Dashboard": {
+    "title": "Announcement Bars",
+    "subtitle": "Create and manage scheduled announcement banners",
+    "createButton": "Create Announcement Bar",
+    "emptyState": {
+      "heading": "No announcement bars yet",
+      "content": "Create your first announcement bar to display messages on your storefront"
+    },
+    "table": {
+      "name": "Name",
+      "status": "Status",
+      "schedule": "Schedule",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "scheduled": "Scheduled"
+    },
+    "actions": {
+      "edit": "Edit",
+      "duplicate": "Duplicate",
+      "delete": "Delete"
+    }
+  },
+  "AnnouncementBar": {
+    "create": {
+      "title": "Create Announcement Bar",
+      "subtitle": "Create a new announcement bar with custom content and scheduling"
+    },
+    "edit": {
+      "title": "Edit Announcement Bar",
+      "subtitle": "Update your announcement bar settings"
+    },
+    "form": {
+      "basicInfo": "Basic Information",
+      "name": "Name",
+      "namePlaceholder": "Enter announcement bar name",
+      "status": "Status",
+      "statusEnabled": "Enabled",
+      "backgroundColor": "Background Color",
+      "content": "Content",
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "fontSize": "Font Size",
+      "htmlTag": "HTML Tag",
+      "addLine": "Add Line",
+      "scheduling": "Scheduling",
+      "enableScheduling": "Enable scheduling",
+      "startDate": "Start Date (UTC)",
+      "endDate": "End Date (UTC)",
+      "link": "Link / Call to Action",
+      "addLink": "Add link",
+      "linkType": "Link Type",
+      "linkValue": "Link Value",
+      "linkTarget": "Link Target",
+      "sameWindow": "Same Window",
+      "newWindow": "New Window",
+      "coupon": "Coupon Code Integration",
+      "addCoupon": "Add coupon code",
+      "selectCoupon": "Select Coupon",
+      "couponDisplay": "Coupon Display Text",
+      "assignment": "Assignment",
+      "assignmentDescription": "Select where this announcement bar should appear",
+      "homepage": "Homepage",
+      "productTypes": "Product Types",
+      "collections": "Collections",
+      "categories": "Categories",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "linkTypes": {
+      "external": "External URL",
+      "productType": "Product Type",
+      "collection": "Collection",
+      "homepage": "Homepage"
+    }
+  },
+  "NotFound": {
+    "heading": "Page not found",
+    "description": "The page you're looking for doesn't exist"
+  }
+}

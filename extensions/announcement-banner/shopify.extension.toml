@@ -1,0 +1,13 @@
+api_version = "2024-10"
+
+[[extensions]]
+name = "Announcement Banner"
+handle = "announcement-banner"
+type = "theme"
+
+[extensions.capabilities]
+api_access = true
+
+[[extensions.targeting]]
+module = "./blocks/announcement-bar.liquid"
+target = "body"

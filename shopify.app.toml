@@ -1,0 +1,30 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+# NOTE: You need to run 'shopify app config link' to connect this app to your Partner Dashboard
+# This will generate the client_id automatically
+client_id = ""
+name = "Time-based App"
+application_url = "https://time-based-app.vercel.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2025-01"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_themes,write_content,read_discounts,read_products"
+
+[auth]
+redirect_urls = [
+  "https://time-based-app.vercel.app/api/auth",
+  "https://time-based-app.vercel.app/api/auth/callback"
+]
+
+[app_proxy]
+url = "https://time-based-app.vercel.app"
+subpath = "time-based"
+prefix = "apps"

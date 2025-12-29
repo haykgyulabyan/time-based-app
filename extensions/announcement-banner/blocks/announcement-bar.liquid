@@ -1,0 +1,26 @@
+{% comment %}
+  Time-based App - Announcement Banner
+  This app embed block renders scheduled announcement banners at the top of the page.
+  Scheduling is checked client-side using UTC time.
+{% endcomment %}
+
+<div id="time-based-app-banners" data-shop="{{ shop.permanent_domain }}"></div>
+
+{{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
+
+<script src="{{ 'announcement-bar.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Announcement Banner",
+  "target": "body",
+  "stylesheet": "announcement-bar.css",
+  "javascript": "announcement-bar.js",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Configure announcement banners in the Time-based App admin panel."
+    }
+  ]
+}
+{% endschema %}

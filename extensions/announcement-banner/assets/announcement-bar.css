@@ -1,0 +1,146 @@
+/**
+ * Time-based App - Announcement Banner Styles
+ */
+
+/* Container */
+#time-based-app-banners {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: none;
+}
+
+/* Individual banner */
+.time-based-announcement-bar {
+  width: 100%;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  text-align: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Content wrapper */
+.time-based-announcement-bar__content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Link wrapper */
+.time-based-announcement-bar__link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.time-based-announcement-bar__link:hover {
+  opacity: 0.85;
+}
+
+/* Text content */
+.time-based-announcement-bar__text {
+  margin: 0;
+  padding: 0;
+  color: #ffffff;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+/* Text formatting (applied via HTML) */
+.time-based-announcement-bar__text b,
+.time-based-announcement-bar__text strong {
+  font-weight: 700;
+}
+
+.time-based-announcement-bar__text i,
+.time-based-announcement-bar__text em {
+  font-style: italic;
+}
+
+.time-based-announcement-bar__text u {
+  text-decoration: underline;
+}
+
+.time-based-announcement-bar__text a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.time-based-announcement-bar__text a:hover {
+  opacity: 0.85;
+}
+
+/* Coupon display */
+.time-based-announcement-bar__coupon {
+  margin-top: 4px;
+  padding: 4px 12px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+/* Multiple banners stack */
+.time-based-announcement-bar + .time-based-announcement-bar {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Body padding adjustment to prevent content being hidden behind banner */
+body.has-time-based-banner {
+  padding-top: var(--time-based-banner-height, 50px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .time-based-announcement-bar {
+    padding: 10px 12px;
+  }
+
+  .time-based-announcement-bar__text {
+    font-size: 13px !important;
+  }
+
+  .time-based-announcement-bar__content {
+    gap: 2px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .time-based-announcement-bar__text {
+    font-weight: 500;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .time-based-announcement-bar {
+    animation: none;
+  }
+}
+
+/* Print styles - hide banners */
+@media print {
+  #time-based-app-banners {
+    display: none !important;
+  }
+}
