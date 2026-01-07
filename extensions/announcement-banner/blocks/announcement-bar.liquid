@@ -1,25 +1,28 @@
 {% comment %}
-  Time-based App - Announcement Banner
-  This app embed block renders scheduled announcement banners at the top of the page.
+  Time-based App - Announcement Banner & Slider Banner
+  This app embed block renders scheduled announcement banners and slider banners.
   Scheduling is checked client-side using UTC time.
 {% endcomment %}
 
 <div id="time-based-app-banners" data-shop="{{ shop.permanent_domain }}"></div>
+<div id="time-based-app-sliders" data-shop="{{ shop.permanent_domain }}"></div>
 
 {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
+{{ 'slider-banner.css' | asset_url | stylesheet_tag }}
 
 <script src="{{ 'announcement-bar.js' | asset_url }}" defer></script>
+<script src="{{ 'slider-banner.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
-  "name": "Announcement Banner",
+  "name": "Time-based Content",
   "target": "body",
   "stylesheet": "announcement-bar.css",
   "javascript": "announcement-bar.js",
   "settings": [
     {
       "type": "paragraph",
-      "content": "Configure announcement banners in the Time-based App admin panel."
+      "content": "Configure announcement bars and slider banners in the Time-based App admin panel."
     }
   ]
 }
