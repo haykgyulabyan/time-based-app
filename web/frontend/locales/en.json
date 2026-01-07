@@ -3,15 +3,17 @@
     "title": "Time-based App"
   },
   "Dashboard": {
-    "title": "Announcement Bars",
-    "subtitle": "Create and manage scheduled announcement banners",
-    "createButton": "Create Announcement Bar",
+    "title": "Time-based App",
+    "subtitle": "Manage announcement bars, slider banners, and advertisements",
+    "createButton": "Create",
     "emptyState": {
-      "heading": "No announcement bars yet",
-      "content": "Create your first announcement bar to display messages on your storefront"
+      "heading": "No content created yet",
+      "content": "Get started by creating your first announcement bar, slider banner, or advertisement"
     },
+    "createContent": "Create Content",
     "table": {
       "name": "Name",
+      "type": "Type",
       "status": "Status",
       "schedule": "Schedule",
       "actions": "Actions"
@@ -25,7 +27,18 @@
       "edit": "Edit",
       "duplicate": "Duplicate",
       "delete": "Delete"
+    },
+    "contentTypes": {
+      "announcementBar": "Announcement Bar",
+      "announcementBarDescription": "Scrolling or static text messages",
+      "sliderBanner": "Slider Banner",
+      "sliderBannerDescription": "Multi-slide image or video carousel",
+      "advertisement": "Advertisement",
+      "advertisementDescription": "Single promotional content"
     }
+  },
+  "CreateContentModal": {
+    "title": "Create New Content"
   },
   "AnnouncementBar": {
     "create": {
@@ -78,6 +91,83 @@
       "productType": "Product Type",
       "collection": "Collection",
       "homepage": "Homepage"
+    }
+  },
+  "SliderBanner": {
+    "create": {
+      "title": "Create Slider Banner"
+    },
+    "form": {
+      "formatSelection": "Format Selection",
+      "formatDescription": "Choose one aspect ratio for desktop slides and one for mobile slides. All slides must match their respective aspect ratios.",
+      "desktopAspectRatio": "Desktop Aspect Ratio",
+      "mobileAspectRatio": "Mobile Aspect Ratio",
+      "selectRatio": "Select ratio",
+      "imageRequirements": "Image Requirements:",
+      "resolution": "Resolution",
+      "maxSlides": "Max slides",
+      "basicInfo": "Basic Information",
+      "name": "Name",
+      "namePlaceholder": "e.g., Summer Sale Slider",
+      "nameHelpText": "Internal name for your slider",
+      "enableSlider": "Enable this slider",
+      "sliderSettings": "Slider Settings",
+      "addBorder": "Add border (Desktop only)",
+      "transitionEffect": "Transition Effect",
+      "selectEffect": "Select an effect",
+      "delayBetweenSlides": "Delay Between Slides (seconds)",
+      "delayHelpText": "Time each slide is displayed before transitioning",
+      "slides": "Slides",
+      "slidesMinimum": "Minimum 2 slides required",
+      "slide": "Slide",
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "mediaUpload": "Media Upload",
+      "mediaUploadText": "Click to upload image or video",
+      "mediaUploadFormats": "JPG, PNG, WebP, MP4, WebM",
+      "link": "Link (Optional)",
+      "noLink": "No link",
+      "externalUrl": "External URL",
+      "collection": "Collection",
+      "product": "Product",
+      "page": "Page",
+      "addButton": "Add Button",
+      "buttonText": "Button Text",
+      "buttonStyle": "Button Style",
+      "addSlide": "+ Add Slide",
+      "scheduling": "Scheduling",
+      "scheduleSlider": "Schedule this slider",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "assignment": "Assignment / Targeting",
+      "assignmentDescription": "Select where this slider should appear",
+      "homepage": "Homepage",
+      "productTypes": "Product Types",
+      "collections": "Collections",
+      "categories": "Categories",
+      "vendors": "Vendors",
+      "cancel": "Cancel",
+      "save": "Save Slider"
+    },
+    "aspectRatios": {
+      "16:9": "16:9 (Widescreen)",
+      "4:3": "4:3 (Standard)",
+      "1:1": "1:1 (Square)",
+      "21:9": "21:9 (Ultrawide)",
+      "9:16": "9:16 (Portrait)",
+      "4:5": "4:5 (Portrait)",
+      "3:4": "3:4 (Portrait)"
+    },
+    "transitions": {
+      "fade": "Fade",
+      "slide": "Slide",
+      "zoom": "Zoom",
+      "none": "None"
+    },
+    "buttonStyles": {
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "outline": "Outline"
     }
   },
   "NotFound": {

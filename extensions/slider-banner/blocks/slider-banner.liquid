@@ -1,0 +1,26 @@
+{% comment %}
+  Time-based App - Slider Banner
+  This app embed block renders scheduled slider banners on the storefront.
+  Scheduling is checked client-side using UTC time.
+{% endcomment %}
+
+<div id="time-based-app-sliders" data-shop="{{ shop.permanent_domain }}"></div>
+
+{{ 'slider-banner.css' | asset_url | stylesheet_tag }}
+
+<script src="{{ 'slider-banner.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Slider Banner",
+  "target": "body",
+  "stylesheet": "slider-banner.css",
+  "javascript": "slider-banner.js",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Configure slider banners in the Time-based App admin panel."
+    }
+  ]
+}
+{% endschema %}

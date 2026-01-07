@@ -83,6 +83,49 @@ class PostgreSQLDatabase {
       CREATE INDEX IF NOT EXISTS idx_announcement_bars_priority ON announcement_bars(priority DESC)
     `);
 
+    // Create slider_banners table
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS slider_banners (
+        id SERIAL PRIMARY KEY,
+        shop VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        status BOOLEAN DEFAULT true,
+
+        -- Format
+        desktop_aspect_ratio VARCHAR(20),
+        mobile_aspect_ratio VARCHAR(20),
+
+        -- Slider Settings
+        add_border BOOLEAN DEFAULT false,
+        transition_effect VARCHAR(100),
+        delay_between_slides INTEGER DEFAULT 5,
+
+        -- Slides (JSON array)
+        slides JSONB NOT NULL DEFAULT '[]',
+
+        -- Scheduling
+        scheduling_enabled BOOLEAN DEFAULT false,
+        start_date TIMESTAMP WITH TIME ZONE,
+        end_date TIMESTAMP WITH TIME ZONE,
+
+        -- Assignment
+        assignment JSONB NOT NULL DEFAULT '{}',
+
+        priority INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create indexes for slider_banners
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS idx_slider_banners_shop ON slider_banners(shop)
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS idx_slider_banners_status ON slider_banners(status)
+    `);
+
     console.log("[Database] PostgreSQL initialized successfully");
   }
 
@@ -280,15 +323,163 @@ class Database {
     };
   }
 
+  // ==================== SLIDER BANNER OPERATIONS ====================
+
+  async createSliderBanner(shop, data) {
+    const result = await this.query(
+      `INSERT INTO slider_banners (
+        shop, name, status,
+        desktop_aspect_ratio, mobile_aspect_ratio,
+        add_border, transition_effect, delay_between_slides,
+        slides, scheduling_enabled, start_date, end_date,
+        assignment, priority
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING *`,
+      [
+        shop,
+        data.name,
+        data.status ?? true,
+        data.desktopAspectRatio || null,
+        data.mobileAspectRatio || null,
+        data.addBorder ?? false,
+        data.transitionEffect || null,
+        data.delayBetweenSlides ?? 5,
+        JSON.stringify(data.slides || []),
+        data.schedulingEnabled ?? false,
+        data.startDate || null,
+        data.endDate || null,
+        JSON.stringify(data.assignment || {}),
+        data.priority ?? 0
+      ]
+    );
+    return this.parseSliderBanner(result.rows[0]);
+  }
+
+  async getAllSliderBanners(shop) {
+    const result = await this.query(
+      `SELECT * FROM slider_banners
+       WHERE shop = ?
+       ORDER BY priority DESC, created_at DESC`,
+      [shop]
+    );
+    return result.rows.map(row => this.parseSliderBanner(row));
+  }
+
+  async getSliderBannerById(id) {
+    const result = await this.query(
+      "SELECT * FROM slider_banners WHERE id = ?",
+      [id]
+    );
+    if (!result.rows[0]) return null;
+    return this.parseSliderBanner(result.rows[0]);
+  }
+
+  async getActiveSliderBanners(shop) {
+    const result = await this.query(
+      `SELECT * FROM slider_banners
+       WHERE shop = ? AND status = true
+       ORDER BY priority DESC`,
+      [shop]
+    );
+    return result.rows.map(row => this.parseSliderBanner(row));
+  }
+
+  async updateSliderBanner(id, data) {
+    const result = await this.query(
+      `UPDATE slider_banners SET
+        name = ?,
+        status = ?,
+        desktop_aspect_ratio = ?,
+        mobile_aspect_ratio = ?,
+        add_border = ?,
+        transition_effect = ?,
+        delay_between_slides = ?,
+        slides = ?,
+        scheduling_enabled = ?,
+        start_date = ?,
+        end_date = ?,
+        assignment = ?,
+        priority = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      RETURNING *`,
+      [
+        data.name,
+        data.status ?? true,
+        data.desktopAspectRatio || null,
+        data.mobileAspectRatio || null,
+        data.addBorder ?? false,
+        data.transitionEffect || null,
+        data.delayBetweenSlides ?? 5,
+        JSON.stringify(data.slides || []),
+        data.schedulingEnabled ?? false,
+        data.startDate || null,
+        data.endDate || null,
+        JSON.stringify(data.assignment || {}),
+        data.priority ?? 0,
+        id
+      ]
+    );
+    return this.parseSliderBanner(result.rows[0]);
+  }
+
+  async deleteSliderBanner(id) {
+    await this.query("DELETE FROM slider_banners WHERE id = ?", [id]);
+  }
+
+  async duplicateSliderBanner(id, shop) {
+    const original = await this.getSliderBannerById(id);
+    if (!original) return null;
+
+    const newData = {
+      ...original,
+      name: original.name ? `${original.name} (Copy)` : 'Copy',
+    };
+    delete newData.id;
+    delete newData.createdAt;
+    delete newData.updatedAt;
+
+    return await this.createSliderBanner(shop, newData);
+  }
+
+  // Helper to parse slider banner JSON fields
+  parseSliderBanner(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      shop: row.shop,
+      name: row.name,
+      status: row.status,
+      desktopAspectRatio: row.desktop_aspect_ratio,
+      mobileAspectRatio: row.mobile_aspect_ratio,
+      addBorder: row.add_border,
+      transitionEffect: row.transition_effect,
+      delayBetweenSlides: row.delay_between_slides,
+      slides: typeof row.slides === 'string' ? JSON.parse(row.slides) : row.slides,
+      schedulingEnabled: row.scheduling_enabled,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      assignment: typeof row.assignment === 'string' ? JSON.parse(row.assignment) : row.assignment,
+      priority: row.priority,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
   // GDPR compliance - delete all shop data
   async deleteShopData(shop) {
     console.log(`[Database] Deleting all data for shop: ${shop}`);
-    const result = await this.query(
+    const announcementResult = await this.query(
       "DELETE FROM announcement_bars WHERE shop = ?",
       [shop]
     );
-    console.log(`[Database] Deleted ${result.rowCount || 0} announcement bars for shop: ${shop}`);
-    return result.rowCount || 0;
+    const sliderResult = await this.query(
+      "DELETE FROM slider_banners WHERE shop = ?",
+      [shop]
+    );
+    console.log(`[Database] Deleted ${announcementResult.rowCount || 0} announcement bars for shop: ${shop}`);
+    console.log(`[Database] Deleted ${sliderResult.rowCount || 0} slider banners for shop: ${shop}`);
+    return (announcementResult.rowCount || 0) + (sliderResult.rowCount || 0);
   }
 
   close() {

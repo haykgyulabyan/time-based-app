@@ -1,0 +1,13 @@
+api_version = "2024-10"
+
+[[extensions]]
+name = "Slider Banner"
+handle = "slider-banner"
+type = "theme"
+
+[extensions.capabilities]
+api_access = true
+
+[[extensions.targeting]]
+module = "./blocks/slider-banner.liquid"
+target = "body"
