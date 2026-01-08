@@ -1,8 +1,8 @@
 {
   "version": 2,
   "framework": null,
-  "installCommand": "npm install",
-  "buildCommand": "cd web/frontend && npm run build",
+  "installCommand": "npm install --workspaces --include-workspace-root",
+  "buildCommand": "npm run build --workspace=web/frontend",
   "outputDirectory": ".",
   "builds": [
     {
