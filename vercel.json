@@ -1,10 +1,13 @@
 {
   "version": 2,
-  "framework": null,
-  "installCommand": "npm install && cd web && npm install && cd frontend && npm install",
-  "buildCommand": "cd web/frontend && npx vite build",
-  "outputDirectory": ".",
   "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "web/frontend/dist"
+      }
+    },
     {
       "src": "web/index.js",
       "use": "@vercel/node",
@@ -14,6 +17,10 @@
     }
   ],
   "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/web/index.js"
