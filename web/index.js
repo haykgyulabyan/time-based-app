@@ -1,6 +1,7 @@
 // @ts-check
 import "dotenv/config";
 import { join } from "path";
+import { readFileSync } from "fs";
 import express from "express";
 import serveStatic from "serve-static";
 
@@ -272,26 +273,36 @@ app.get("/api/product-types", async (req, res) => {
 // Serve frontend static files
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
+// Read built HTML file for production, or use fallback for development
+let indexHtml;
+if (process.env.NODE_ENV === "production") {
+  try {
+    indexHtml = readFileSync(join(STATIC_PATH, "index.html"), "utf-8");
+  } catch (e) {
+    console.error("[Server] Could not read built index.html:", e.message);
+    indexHtml = null;
+  }
+}
+
 // Catch-all route for SPA
 app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res, _next) => {
-  return res
-    .status(200)
-    .set("Content-Type", "text/html")
-    .send(
-      `<!DOCTYPE html>
+  const html = indexHtml || `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Time-based App</title>
-    <script type="module" src="/assets/index.js"></script>
-    <link rel="stylesheet" href="/assets/index.css" />
+    <script type="module" src="/index.jsx"></script>
   </head>
   <body>
     <div id="app"></div>
   </body>
-</html>`
-    );
+</html>`;
+
+  return res
+    .status(200)
+    .set("Content-Type", "text/html")
+    .send(html);
 });
 
 app.listen(PORT, () => {

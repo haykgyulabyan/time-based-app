@@ -60,6 +60,17 @@ export default defineConfig({
   resolve: {
     preserveSymlinks: true,
   },
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        entryFileNames: "assets/index.js",
+        chunkFileNames: "assets/[name].js",
+        assetFileNames: "assets/[name].[ext]",
+      },
+    },
+  },
   server: {
     host: "localhost",
     port: process.env.FRONTEND_PORT,
