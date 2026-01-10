@@ -615,8 +615,9 @@ export default function CreateSliderBanner() {
       delayBetweenSlides: parseInt(delayBetweenSlides, 10) || 5,
       slides: slidesData,
       schedulingEnabled,
-      startDate: schedulingEnabled && startDate ? new Date(startDate).toISOString() : null,
-      endDate: schedulingEnabled && endDate ? new Date(endDate).toISOString() : null,
+      // Treat datetime-local input as UTC directly (append Z to make it UTC)
+      startDate: schedulingEnabled && startDate ? startDate + ":00.000Z" : null,
+      endDate: schedulingEnabled && endDate ? endDate + ":00.000Z" : null,
       assignment,
     };
 
@@ -868,12 +869,14 @@ export default function CreateSliderBanner() {
                       type="datetime-local"
                       value={startDate}
                       onChange={setStartDate}
+                      helpText="All times are in UTC"
                     />
                     <TextField
                       label={t("SliderBanner.form.endDate")}
                       type="datetime-local"
                       value={endDate}
                       onChange={setEndDate}
+                      helpText="All times are in UTC"
                     />
                   </FormLayout.Group>
                 </FormLayout>
@@ -940,7 +943,7 @@ export default function CreateSliderBanner() {
                       allowMultiple
                       choices={collections.map((col) => ({
                         label: col.title,
-                        value: col.id,
+                        value: col.handle,
                       }))}
                       selected={assignment.collections}
                       onChange={(value) => handleAssignmentChange("collections", value)}

@@ -20,6 +20,31 @@ import {
 import { MenuVerticalIcon } from "@shopify/polaris-icons";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch";
 
+// SVG Icons for content types
+const AnnouncementBarIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9 18V5l12-2v13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="6" cy="18" r="3" stroke="white" strokeWidth="2"/>
+    <circle cx="18" cy="16" r="3" stroke="white" strokeWidth="2"/>
+  </svg>
+);
+
+const SliderBannerIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="5" width="18" height="14" rx="2" stroke="white" strokeWidth="2"/>
+    <path d="M3 16l5-4 4 3 5-4 4 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const AdvertisementIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="4" width="16" height="16" rx="2" stroke="white" strokeWidth="2"/>
+    <line x1="8" y1="9" x2="16" y2="9" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="8" y1="13" x2="16" y2="13" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="8" y1="17" x2="12" y2="17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
 // Content type card component for the modal
 function ContentTypeCard({ icon, iconBg, title, description, onClick }) {
   return (
@@ -27,34 +52,35 @@ function ContentTypeCard({ icon, iconBg, title, description, onClick }) {
       onClick={onClick}
       style={{
         flex: "1",
-        padding: "20px",
-        backgroundColor: "#f9fafb",
+        padding: "24px 16px",
+        backgroundColor: "#ffffff",
         borderRadius: "12px",
         cursor: "pointer",
         textAlign: "center",
         transition: "all 0.2s ease",
-        border: "1px solid transparent",
+        border: "1px solid #e5e7eb",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = "#f3f4f6";
-        e.currentTarget.style.border = "1px solid #e5e7eb";
+        e.currentTarget.style.backgroundColor = "#f9fafb";
+        e.currentTarget.style.borderColor = "#d1d5db";
+        e.currentTarget.style.transform = "translateY(-2px)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = "#f9fafb";
-        e.currentTarget.style.border = "1px solid transparent";
+        e.currentTarget.style.backgroundColor = "#ffffff";
+        e.currentTarget.style.borderColor = "#e5e7eb";
+        e.currentTarget.style.transform = "translateY(0)";
       }}
     >
       <div
         style={{
-          width: "48px",
-          height: "48px",
-          borderRadius: "12px",
+          width: "56px",
+          height: "56px",
+          borderRadius: "14px",
           backgroundColor: iconBg,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          margin: "0 auto 12px",
-          fontSize: "24px",
+          margin: "0 auto 16px",
         }}
       >
         {icon}
@@ -389,21 +415,21 @@ export default function Dashboard() {
         <Modal.Section>
           <div style={{ display: "flex", gap: "16px" }}>
             <ContentTypeCard
-              icon="📢"
+              icon={<AnnouncementBarIcon />}
               iconBg="#8b5cf6"
               title={t("Dashboard.contentTypes.announcementBar")}
               description={t("Dashboard.contentTypes.announcementBarDescription")}
               onClick={() => handleContentTypeSelect("announcement-bar")}
             />
             <ContentTypeCard
-              icon="🖼️"
+              icon={<SliderBannerIcon />}
               iconBg="#3b82f6"
               title={t("Dashboard.contentTypes.sliderBanner")}
               description={t("Dashboard.contentTypes.sliderBannerDescription")}
               onClick={() => handleContentTypeSelect("slider-banner")}
             />
             <ContentTypeCard
-              icon="📋"
+              icon={<AdvertisementIcon />}
               iconBg="#f59e0b"
               title={t("Dashboard.contentTypes.advertisement")}
               description={t("Dashboard.contentTypes.advertisementDescription")}

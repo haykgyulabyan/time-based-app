@@ -2,13 +2,23 @@
  * Time-based App - Announcement Banner Styles
  */
 
-/* Container */
+/* Header container - normal document flow (preferred) */
+#time-based-header-banners {
+  display: block;
+  width: 100%;
+}
+
+#time-based-header-banners:empty {
+  display: none;
+}
+
+/* Fallback container - fixed positioning for themes without header integration */
 #time-based-app-banners {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 9999;
+  z-index: 2147483600;
   display: none;
 }
 
@@ -42,7 +52,20 @@
   gap: 4px;
 }
 
-/* Link wrapper */
+/* Clickable banner (entire banner is a link) */
+.time-based-announcement-bar--clickable {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.time-based-announcement-bar--clickable:hover {
+  opacity: 0.9;
+}
+
+/* Legacy link wrapper (no longer used, kept for backwards compatibility) */
 .time-based-announcement-bar__link {
   text-decoration: none;
   color: inherit;

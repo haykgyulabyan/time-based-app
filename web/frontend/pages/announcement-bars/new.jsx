@@ -24,6 +24,7 @@ import {
 } from "@shopify/polaris";
 import { DeleteIcon, PlusIcon } from "@shopify/polaris-icons";
 import { useAuthenticatedFetch } from "../../hooks/useAuthenticatedFetch";
+import { RichTextField } from "../../components";
 
 const FONT_SIZES = [
   { label: "12px", value: "12px" },
@@ -251,8 +252,9 @@ export default function CreateAnnouncementBar() {
         mobile: line.mobile,
       })),
       schedulingEnabled,
-      startDate: schedulingEnabled && startDate ? new Date(startDate).toISOString() : null,
-      endDate: schedulingEnabled && endDate ? new Date(endDate).toISOString() : null,
+      // Treat datetime-local input as UTC directly (append Z to make it UTC)
+      startDate: schedulingEnabled && startDate ? startDate + ":00.000Z" : null,
+      endDate: schedulingEnabled && endDate ? endDate + ":00.000Z" : null,
       linkEnabled,
       linkType: linkEnabled ? linkType : null,
       linkValue: linkEnabled ? linkValue : null,
@@ -339,13 +341,13 @@ export default function CreateAnnouncementBar() {
               />
             </FormLayout.Group>
 
-            <TextField
+            <RichTextField
               label="Content"
               value={line[device].text}
               onChange={(value) => updateContentLine(line.id, device, "text", value)}
               multiline={3}
               placeholder={`Enter ${device} announcement text...`}
-              helpText="You can use basic HTML tags for formatting (bold, italic, links)"
+              helpText="Use the toolbar to format text or type HTML tags directly"
             />
           </FormLayout>
         </LegacyStack>
@@ -543,7 +545,11 @@ export default function CreateAnnouncementBar() {
         {/* Coupon Code Integration */}
         <Layout.Section>
           <LegacyCard title={t("AnnouncementBar.form.coupon")} sectioned>
-            <FormLayout>
+            <LegacyStack vertical spacing="loose">
+              <Text variant="bodyMd" as="p" tone="subdued">
+                Display an active coupon code with discount details
+              </Text>
+
               <Checkbox
                 label={t("AnnouncementBar.form.addCoupon")}
                 checked={couponEnabled}
@@ -551,55 +557,72 @@ export default function CreateAnnouncementBar() {
               />
 
               {couponEnabled && (
-                <>
+                <LegacyStack vertical spacing="loose">
                   <Select
                     label={t("AnnouncementBar.form.selectCoupon")}
                     options={[
                       { label: "Choose a coupon", value: "" },
                       ...discounts.map((discount) => ({
-                        label: `${discount.code} - ${discount.summary}`,
+                        label: `${discount.code} - ${discount.value || "Discount"}`,
                         value: discount.code,
                       })),
                     ]}
                     value={couponCode}
-                    onChange={setCouponCode}
+                    onChange={(code) => {
+                      setCouponCode(code);
+                      // Auto-generate initial display text when coupon is selected
+                      if (code) {
+                        const selectedDiscount = discounts.find(d => d.code === code);
+                        if (selectedDiscount && !couponDisplay.text) {
+                          const discountText = selectedDiscount.value || "a discount";
+                          setCouponDisplay({
+                            ...couponDisplay,
+                            text: `Get ${discountText} with code ${code}`
+                          });
+                        }
+                      }
+                    }}
                   />
 
                   {couponCode && (
-                    <>
-                      <TextField
-                        label={t("AnnouncementBar.form.couponDisplay")}
+                    <LegacyStack vertical spacing="tight">
+                      <Text variant="headingSm" as="h3">
+                        Coupon Display Text (Editable)
+                      </Text>
+                      <RichTextField
                         value={couponDisplay.text}
                         onChange={(value) =>
                           setCouponDisplay({ ...couponDisplay, text: value })
                         }
-                        multiline={2}
-                        placeholder={`Use code ${couponCode} for a discount!`}
-                        helpText="This text will be displayed as an additional line"
+                        multiline={3}
+                        placeholder={`Get a discount with code ${couponCode}`}
+                        helpText="This text will be displayed as an additional line in your announcement bar"
                       />
-                      <FormLayout.Group>
-                        <Select
-                          label={t("AnnouncementBar.form.fontSize")}
-                          options={FONT_SIZES}
-                          value={couponDisplay.fontSize}
-                          onChange={(value) =>
-                            setCouponDisplay({ ...couponDisplay, fontSize: value })
-                          }
-                        />
-                        <Select
-                          label={t("AnnouncementBar.form.htmlTag")}
-                          options={HTML_TAGS}
-                          value={couponDisplay.htmlTag}
-                          onChange={(value) =>
-                            setCouponDisplay({ ...couponDisplay, htmlTag: value })
-                          }
-                        />
-                      </FormLayout.Group>
-                    </>
+                      <FormLayout>
+                        <FormLayout.Group>
+                          <Select
+                            label={t("AnnouncementBar.form.fontSize")}
+                            options={FONT_SIZES}
+                            value={couponDisplay.fontSize}
+                            onChange={(value) =>
+                              setCouponDisplay({ ...couponDisplay, fontSize: value })
+                            }
+                          />
+                          <Select
+                            label={t("AnnouncementBar.form.htmlTag")}
+                            options={HTML_TAGS}
+                            value={couponDisplay.htmlTag}
+                            onChange={(value) =>
+                              setCouponDisplay({ ...couponDisplay, htmlTag: value })
+                            }
+                          />
+                        </FormLayout.Group>
+                      </FormLayout>
+                    </LegacyStack>
                   )}
-                </>
+                </LegacyStack>
               )}
-            </FormLayout>
+            </LegacyStack>
           </LegacyCard>
         </Layout.Section>
 
@@ -620,9 +643,13 @@ export default function CreateAnnouncementBar() {
               <div>
                 <Checkbox
                   label={t("AnnouncementBar.form.productTypes")}
-                  checked={assignment.productTypes.length > 0}
+                  checked={assignment.productTypes.length > 0 && assignment.productTypes.length === productTypes.length}
+                  indeterminate={assignment.productTypes.length > 0 && assignment.productTypes.length < productTypes.length}
                   onChange={(checked) => {
-                    if (!checked) {
+                    // Select all or deselect all
+                    if (checked) {
+                      handleAssignmentChange("productTypes", productTypes);
+                    } else {
                       handleAssignmentChange("productTypes", []);
                     }
                   }}
@@ -645,9 +672,13 @@ export default function CreateAnnouncementBar() {
               <div>
                 <Checkbox
                   label={t("AnnouncementBar.form.collections")}
-                  checked={assignment.collections.length > 0}
+                  checked={assignment.collections.length > 0 && assignment.collections.length === collections.length}
+                  indeterminate={assignment.collections.length > 0 && assignment.collections.length < collections.length}
                   onChange={(checked) => {
-                    if (!checked) {
+                    // Select all or deselect all
+                    if (checked) {
+                      handleAssignmentChange("collections", collections.map(c => c.handle));
+                    } else {
                       handleAssignmentChange("collections", []);
                     }
                   }}
@@ -658,7 +689,7 @@ export default function CreateAnnouncementBar() {
                       allowMultiple
                       choices={collections.map((col) => ({
                         label: col.title,
-                        value: col.id,
+                        value: col.handle,
                       }))}
                       selected={assignment.collections}
                       onChange={(value) => handleAssignmentChange("collections", value)}

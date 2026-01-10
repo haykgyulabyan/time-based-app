@@ -64,9 +64,10 @@
    */
   async function fetchSliders(pageInfo) {
     const params = new URLSearchParams();
-    params.append('homepage', pageInfo.isHomepage);
+    // Send the actual path for server-side page type detection
+    params.append('path', window.location.pathname);
     if (pageInfo.productType) {
-      params.append('productType', pageInfo.productType);
+      params.append('product_type', pageInfo.productType);
     }
     if (pageInfo.collectionHandle) {
       params.append('collection', pageInfo.collectionHandle);

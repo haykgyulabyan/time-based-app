@@ -6,14 +6,23 @@
 (function() {
   'use strict';
 
-  const CONTAINER_ID = 'time-based-app-banners';
+  // Try header container first (for proper document flow), fall back to app embed container
+  const HEADER_CONTAINER_ID = 'time-based-header-banners';
+  const FALLBACK_CONTAINER_ID = 'time-based-app-banners';
   const APP_PROXY_PATH = '/apps/time-based/banners';
 
   /**
    * Initialize the announcement banner system
    */
   function init() {
-    const container = document.getElementById(CONTAINER_ID);
+    // Prefer header container for proper document flow, fall back to app embed container
+    let container = document.getElementById(HEADER_CONTAINER_ID);
+    let useHeaderContainer = !!container;
+
+    if (!container) {
+      container = document.getElementById(FALLBACK_CONTAINER_ID);
+    }
+
     if (!container) {
       console.warn('Time-based App: Banner container not found');
       return;
@@ -152,26 +161,28 @@
    * Create a banner DOM element
    */
   function createBannerElement(banner) {
-    const bannerDiv = document.createElement('div');
-    bannerDiv.className = 'time-based-announcement-bar';
-    bannerDiv.style.backgroundColor = banner.backgroundColor || '#000000';
+    // If link is enabled, make the entire banner clickable
+    const isClickable = banner.linkEnabled && banner.linkUrl;
+
+    let bannerElement;
+    if (isClickable) {
+      // Use anchor as the banner wrapper for full clickability
+      bannerElement = document.createElement('a');
+      bannerElement.href = banner.linkUrl;
+      bannerElement.target = banner.linkTarget || '_self';
+      bannerElement.className = 'time-based-announcement-bar time-based-announcement-bar--clickable';
+    } else {
+      bannerElement = document.createElement('div');
+      bannerElement.className = 'time-based-announcement-bar';
+    }
+    bannerElement.style.backgroundColor = banner.backgroundColor || '#000000';
 
     // Create inner content wrapper
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'time-based-announcement-bar__content';
 
-    // If link is enabled, wrap in anchor
-    if (banner.linkEnabled && banner.linkUrl) {
-      const link = document.createElement('a');
-      link.href = banner.linkUrl;
-      link.target = banner.linkTarget || '_self';
-      link.className = 'time-based-announcement-bar__link';
-
-      appendContentLines(link, banner);
-      contentWrapper.appendChild(link);
-    } else {
-      appendContentLines(contentWrapper, banner);
-    }
+    // Add content lines
+    appendContentLines(contentWrapper, banner);
 
     // Add coupon display if enabled
     if (banner.couponEnabled && banner.couponDisplay && banner.couponDisplay.text) {
@@ -184,8 +195,8 @@
       contentWrapper.appendChild(couponElement);
     }
 
-    bannerDiv.appendChild(contentWrapper);
-    return bannerDiv;
+    bannerElement.appendChild(contentWrapper);
+    return bannerElement;
   }
 
   /**
