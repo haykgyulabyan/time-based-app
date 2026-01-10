@@ -10,7 +10,7 @@
     "info": "shopify app info",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",
-    "vercel-build": "echo 'Current dir:' && pwd && echo 'Contents:' && ls -la && echo 'Web contents:' && ls -la web/ && echo 'Building frontend...' && npm install --prefix web/frontend && npm run build --prefix web/frontend"
+    "vercel-build": "npm install --prefix web/frontend && npm run build --prefix web/frontend"
   },
   "dependencies": {},
   "author": "hayk",
