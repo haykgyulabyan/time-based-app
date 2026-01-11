@@ -138,7 +138,6 @@ router.get(
       }
 
       console.log("[App Proxy] Fetching slider banners for shop:", shop);
-      console.log("[App Proxy] Path:", path);
 
       // Get all active slider banners for the shop
       const sliders = await database.getActiveSliderBanners(shop);
