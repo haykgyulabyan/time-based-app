@@ -80,8 +80,8 @@ app.post(
 // These are accessed from the storefront via /apps/time-based/...
 app.use("/", appProxyRoutes);
 
-// Parse JSON for API routes
-app.use(express.json());
+// Parse JSON for API routes (increased limit for image uploads)
+app.use(express.json({ limit: '50mb' }));
 
 // All routes after this point require authentication
 app.use("/api/*", shopify.validateAuthenticatedSession());
