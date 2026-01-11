@@ -1,11 +1,15 @@
 {% comment %}
-  Time-based App - Announcement Banner & Slider Banner
-  This app embed block renders scheduled announcement banners and slider banners.
+  Time-based App - Announcement Bars & Slider Banners
+
+  Announcement bars appear automatically at the top of the page.
+
+  For slider banners, add this div to your theme where you want the slider to appear:
+  <div id="time-based-slider-placeholder"></div>
+
   Scheduling is checked client-side using UTC time.
 {% endcomment %}
 
 <div id="time-based-app-banners" data-shop="{{ shop.permanent_domain }}"></div>
-<div id="time-based-app-sliders" data-shop="{{ shop.permanent_domain }}"></div>
 
 {{ 'announcement-bar.css' | asset_url | stylesheet_tag }}
 {{ 'slider-banner.css' | asset_url | stylesheet_tag }}
@@ -22,7 +26,11 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "Configure announcement bars and slider banners in the Time-based App admin panel."
+      "content": "Enables announcement bars and slider banners. Configure content in the Time-based App admin panel."
+    },
+    {
+      "type": "paragraph",
+      "content": "For sliders: Add <div id=\"time-based-slider-placeholder\"></div> to your theme where you want the slider to appear."
     }
   ]
 }

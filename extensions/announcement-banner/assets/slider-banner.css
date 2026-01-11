@@ -6,12 +6,17 @@
   width: 100%;
 }
 
+#time-based-app-sliders:empty {
+  display: none;
+}
+
 .time-based-slider {
   position: relative;
   width: 100%;
   overflow: hidden;
   aspect-ratio: var(--slider-aspect-ratio, 16/9);
   margin-bottom: 20px;
+  background-color: #f3f4f6;
 }
 
 .time-based-slider--bordered {
@@ -32,7 +37,7 @@
   width: 100%;
   height: 100%;
   opacity: 0;
-  transition: opacity 0.5s ease-in-out;
+  visibility: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,13 +45,24 @@
 
 .time-based-slider__slide.active {
   opacity: 1;
+  visibility: visible;
   z-index: 1;
+}
+
+/* Media wrapper for proper clipping during transitions */
+.time-based-slider__media-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .time-based-slider__media {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .time-based-slider__placeholder {
@@ -58,8 +74,10 @@
   justify-content: center;
   color: #9ca3af;
   font-size: 18px;
+  font-weight: 500;
 }
 
+/* Clickable link overlay */
 .time-based-slider__link {
   position: absolute;
   top: 0;
@@ -67,22 +85,28 @@
   width: 100%;
   height: 100%;
   z-index: 2;
+  text-decoration: none;
 }
 
+/* CTA Button */
 .time-based-slider__button {
   position: absolute;
-  z-index: 3;
-  padding: 12px 24px;
+  z-index: 5;
+  padding: 12px 28px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .time-based-slider__button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  opacity: 0.95;
 }
 
 /* Button placements */
@@ -93,36 +117,40 @@
 }
 
 .time-based-slider__button[data-placement="center"]:hover {
-  transform: translate(-50%, -52%);
+  transform: translate(-50%, calc(-50% - 2px));
 }
 
 .time-based-slider__button[data-placement="left"] {
   top: 50%;
-  left: 20px;
+  left: 40px;
   transform: translateY(-50%);
 }
 
 .time-based-slider__button[data-placement="left"]:hover {
-  transform: translateY(-52%);
+  transform: translateY(calc(-50% - 2px));
 }
 
 .time-based-slider__button[data-placement="right"] {
   top: 50%;
-  right: 20px;
+  right: 40px;
   transform: translateY(-50%);
 }
 
 .time-based-slider__button[data-placement="right"]:hover {
-  transform: translateY(-52%);
+  transform: translateY(calc(-50% - 2px));
 }
 
 .time-based-slider__button[data-placement="bottom-left"] {
-  bottom: 20px;
-  left: 20px;
+  bottom: 40px;
+  left: 40px;
+}
+
+.time-based-slider__button[data-placement="bottom-left"]:hover {
+  transform: translateY(-2px);
 }
 
 .time-based-slider__button[data-placement="bottom-center"] {
-  bottom: 20px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
 }
@@ -132,30 +160,34 @@
 }
 
 .time-based-slider__button[data-placement="bottom-right"] {
-  bottom: 20px;
-  right: 20px;
+  bottom: 40px;
+  right: 40px;
+}
+
+.time-based-slider__button[data-placement="bottom-right"]:hover {
+  transform: translateY(-2px);
 }
 
 /* Navigation dots */
 .time-based-slider__dots {
   position: absolute;
-  bottom: 15px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
+  gap: 10px;
   z-index: 10;
 }
 
 .time-based-slider__dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.5);
-  border: none;
+  border: 2px solid rgba(255, 255, 255, 0.8);
   cursor: pointer;
   padding: 0;
-  transition: background-color 0.3s, transform 0.2s;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .time-based-slider__dot:hover {
@@ -167,6 +199,28 @@
   transform: scale(1.2);
 }
 
+/* Transition overlay for stripe effects */
+.time-based-slider__transition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 50;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.time-based-slider__stripe {
+  overflow: hidden;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.time-based-slider__stripe-inner {
+  backface-visibility: hidden;
+}
+
 /* Responsive adjustments */
 @media (max-width: 767px) {
   .time-based-slider {
@@ -175,15 +229,96 @@
 
   .time-based-slider__button {
     padding: 10px 20px;
-    font-size: 14px;
+    font-size: 14px !important;
+  }
+
+  .time-based-slider__button[data-placement="left"],
+  .time-based-slider__button[data-placement="right"],
+  .time-based-slider__button[data-placement="bottom-left"],
+  .time-based-slider__button[data-placement="bottom-right"] {
+    left: 20px;
+    right: auto;
+  }
+
+  .time-based-slider__button[data-placement="bottom-left"],
+  .time-based-slider__button[data-placement="bottom-right"] {
+    bottom: 20px;
   }
 
   .time-based-slider__dots {
-    bottom: 10px;
+    bottom: 12px;
+    gap: 8px;
   }
 
   .time-based-slider__dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
+  }
+
+  .time-based-slider__placeholder {
+    font-size: 14px;
+  }
+}
+
+/* Arrow navigation (optional, can be enabled) */
+.time-based-slider__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.time-based-slider__arrow:hover {
+  background-color: #ffffff;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.time-based-slider__arrow--prev {
+  left: 20px;
+}
+
+.time-based-slider__arrow--next {
+  right: 20px;
+}
+
+.time-based-slider__arrow svg {
+  width: 20px;
+  height: 20px;
+  fill: #333;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .time-based-slider__slide {
+    transition: none;
+  }
+
+  .time-based-slider__button,
+  .time-based-slider__dot,
+  .time-based-slider__arrow {
+    transition: none;
+  }
+
+  .time-based-slider__stripe,
+  .time-based-slider__stripe-inner {
+    transition: none !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  #time-based-app-sliders {
+    display: none !important;
   }
 }
