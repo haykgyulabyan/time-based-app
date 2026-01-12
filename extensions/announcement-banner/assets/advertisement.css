@@ -197,3 +197,239 @@
     transform: translateX(-50%);
   }
 }
+
+/* ========================================
+   Ad Selector UI (Theme Editor)
+   ======================================== */
+
+.time-based-ad-selector {
+  padding: 24px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.time-based-ad-selector__header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.time-based-ad-selector__hint {
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+.time-based-ad-selector__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.time-based-ad-selector__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.time-based-ad-selector__item:hover {
+  border-color: #2e7d32;
+  box-shadow: 0 2px 4px rgba(46, 125, 50, 0.1);
+}
+
+.time-based-ad-selector__item.copied {
+  border-color: #2e7d32;
+  background: #f0fdf4;
+}
+
+.time-based-ad-selector__item.copied .time-based-ad-selector__copy-hint {
+  color: #2e7d32;
+}
+
+.time-based-ad-selector__item.copied .time-based-ad-selector__copy-hint::after {
+  content: 'Copied!';
+}
+
+.time-based-ad-selector__item.copied .time-based-ad-selector__copy-hint::before {
+  display: none;
+}
+
+.time-based-ad-selector__item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-based-ad-selector__item-name {
+  font-weight: 500;
+  color: #111827;
+  font-size: 14px;
+}
+
+.time-based-ad-selector__item-size {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.time-based-ad-selector__item-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.time-based-ad-selector__copy-hint {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.time-based-ad-selector__copy-hint::before {
+  content: 'Click to copy';
+}
+
+.time-based-ad-selector__empty {
+  text-align: center;
+  padding: 20px;
+  color: #6b7280;
+}
+
+.time-based-ad-selector__empty p {
+  margin: 0 0 8px 0;
+}
+
+.time-based-ad-selector__empty-hint {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* ========================================
+   Ad Preview (Loading State)
+   ======================================== */
+
+.time-based-ad-preview {
+  padding: 40px 24px;
+  background: #f9fafb;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.time-based-ad-preview__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.time-based-ad-preview__spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2e7d32;
+  border-radius: 50%;
+  animation: time-based-spin 0.8s linear infinite;
+}
+
+@keyframes time-based-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   Ad Info Header (Theme Editor Preview)
+   ======================================== */
+
+.time-based-ad-info-header {
+  padding: 10px 14px;
+  background: #1f2937;
+  border-radius: 6px 6px 0 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.time-based-ad-info-header__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.time-based-ad-info-header__content strong {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.time-based-ad-info-header__badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #2e7d32;
+  color: #fff;
+}
+
+.time-based-ad-info-header__badge--inactive {
+  background: #dc2626;
+}
+
+.time-based-ad-info-header__warning {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: #fca5a5;
+}
+
+/* Adjust image when info header is present */
+.time-based-ad-info-header + .time-based-advertisement__wrapper .time-based-advertisement__image {
+  border-radius: 0 0 4px 4px;
+}
+
+/* ========================================
+   Error State
+   ======================================== */
+
+.time-based-ad-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.time-based-ad-error svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.time-based-ad-error strong {
+  display: block;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.time-based-ad-error p {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 13px;
+}

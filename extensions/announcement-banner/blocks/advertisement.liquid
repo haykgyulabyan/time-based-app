@@ -1,10 +1,10 @@
 {% comment %}
   Time-based App - Advertisement Block
 
-  Each instance of this block displays one advertisement.
-  The ad ID is entered by the merchant in the theme editor settings.
-
-  Available advertisements are synced to shop metafields when created/updated in the app.
+  Features:
+  - Dropdown selector showing available ads from metafield
+  - Preview of selected advertisement
+  - Shows ad name and size in theme editor
 {% endcomment %}
 
 {% assign ad_id = block.settings.advertisement_id %}
@@ -14,30 +14,51 @@
   class="time-based-advertisement"
   data-ad-id="{{ ad_id }}"
   data-shop="{{ shop.permanent_domain }}"
+  data-available-ads='{% if available_ads %}{{ available_ads | json }}{% else %}[]{% endif %}'
   id="time-based-ad-{{ block.id }}"
 >
   {% if ad_id == blank %}
-    <div class="time-based-ad-placeholder">
-      <p style="margin: 0 0 8px 0; font-weight: 600;">Select an Advertisement</p>
-      <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">
-        Enter the advertisement ID in the block settings to display it here.
-      </p>
+    {%- comment -%} No ad selected - show selector UI {%- endcomment -%}
+    <div class="time-based-ad-selector">
+      <div class="time-based-ad-selector__header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+          <rect x="4" y="4" width="16" height="16" rx="2" stroke="#6b7280" stroke-width="2"/>
+          <line x1="8" y1="9" x2="16" y2="9" stroke="#6b7280" stroke-width="2" stroke-linecap="round"/>
+          <line x1="8" y1="13" x2="16" y2="13" stroke="#6b7280" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Select an Advertisement</span>
+      </div>
+
       {% if available_ads and available_ads.size > 0 %}
-        <p style="margin: 0 0 8px 0; font-size: 13px; color: #374151;">Available advertisements:</p>
-        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4b5563;">
+        <p class="time-based-ad-selector__hint">Click an ad below, then enter its ID in the settings panel on the right.</p>
+        <div class="time-based-ad-selector__list">
           {% for ad in available_ads %}
-            <li>ID: <strong>{{ ad.id }}</strong> - {{ ad.name }} ({{ ad.size }})</li>
+            <div class="time-based-ad-selector__item" data-ad-id="{{ ad.id }}" onclick="navigator.clipboard.writeText('{{ ad.id }}'); this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000);">
+              <div class="time-based-ad-selector__item-info">
+                <span class="time-based-ad-selector__item-name">{{ ad.name }}</span>
+                <span class="time-based-ad-selector__item-size">{{ ad.size }}</span>
+              </div>
+              <div class="time-based-ad-selector__item-id">
+                <span>ID: {{ ad.id }}</span>
+                <span class="time-based-ad-selector__copy-hint">Click to copy</span>
+              </div>
+            </div>
           {% endfor %}
-        </ul>
+        </div>
       {% else %}
-        <p style="margin: 0; font-size: 13px; color: #9ca3af;">
-          No advertisements available. Create one in the Time-based App admin.
-        </p>
+        <div class="time-based-ad-selector__empty">
+          <p>No advertisements available.</p>
+          <p class="time-based-ad-selector__empty-hint">Create advertisements in the Time-based App admin panel, then refresh this page.</p>
+        </div>
       {% endif %}
     </div>
   {% else %}
-    <div class="time-based-ad-loading">
-      <p style="margin: 0; color: #6b7280; font-size: 14px;">Loading advertisement...</p>
+    {%- comment -%} Ad selected - show loading state, JS will render preview {%- endcomment -%}
+    <div class="time-based-ad-preview" data-ad-id="{{ ad_id }}">
+      <div class="time-based-ad-preview__loading">
+        <div class="time-based-ad-preview__spinner"></div>
+        <span>Loading advertisement #{{ ad_id }}...</span>
+      </div>
     </div>
   {% endif %}
 </div>
@@ -54,16 +75,7 @@
       "type": "text",
       "id": "advertisement_id",
       "label": "Advertisement ID",
-      "info": "Enter the ID of the advertisement to display. View available ads in the Time-based App admin panel."
-    },
-    {
-      "type": "paragraph",
-      "content": "Create and manage advertisements in the Time-based App admin panel. Each advertisement has a unique ID shown in the admin."
-    }
-  ],
-  "presets": [
-    {
-      "name": "Time-Based Ad"
+      "info": "Enter the ID of the advertisement. Click on an ad in the preview to copy its ID."
     }
   ]
 }

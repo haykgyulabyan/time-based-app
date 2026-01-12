@@ -20,7 +20,7 @@
     adContainers.forEach(container => {
       const adId = container.dataset.adId;
 
-      // Skip if no ad ID specified
+      // Skip if no ad ID specified (show selector UI)
       if (!adId || adId.trim() === '') {
         return;
       }
@@ -44,7 +44,7 @@
 
       if (!response.ok) {
         console.error('Time-based App: Failed to load advertisement', response.status);
-        hideContainer(container);
+        showError(container, adId, 'Advertisement not found');
         return;
       }
 
@@ -52,25 +52,36 @@
       const ad = data.advertisement;
 
       if (!ad) {
-        console.error('Time-based App: Advertisement not found');
-        hideContainer(container);
+        showError(container, adId, 'Advertisement not found');
         return;
       }
 
       // Check if ad is active (status + schedule)
       if (!isAdActive(ad)) {
-        hideContainer(container);
+        // In theme editor, show preview anyway but indicate it's inactive
+        if (isThemeEditor()) {
+          renderAdvertisement(container, ad, true);
+        } else {
+          hideContainer(container);
+        }
         return;
       }
 
       // Render the advertisement
-      renderAdvertisement(container, ad);
+      renderAdvertisement(container, ad, false);
       container.dataset.rendered = 'true';
 
     } catch (error) {
       console.error('Time-based App: Error loading advertisement', error);
-      hideContainer(container);
+      showError(container, adId, 'Failed to load advertisement');
     }
+  }
+
+  /**
+   * Check if we're in the Shopify theme editor
+   */
+  function isThemeEditor() {
+    return window.Shopify && window.Shopify.designMode;
   }
 
   /**
@@ -103,15 +114,34 @@
   }
 
   /**
+   * Show error message
+   */
+  function showError(container, adId, message) {
+    container.innerHTML = `
+      <div class="time-based-ad-error">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="10" cy="10" r="9" stroke="#dc2626" stroke-width="2"/>
+          <line x1="10" y1="6" x2="10" y2="11" stroke="#dc2626" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="14" r="1" fill="#dc2626"/>
+        </svg>
+        <div>
+          <strong>Error loading ad #${adId}</strong>
+          <p>${message}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Render advertisement content
    */
-  function renderAdvertisement(container, ad) {
+  function renderAdvertisement(container, ad, isInactive) {
     const isMobile = window.innerWidth < 768;
     const image = isMobile ? (ad.mobileImage || ad.desktopImage) : ad.desktopImage;
 
-    // If no image, hide container
+    // If no image, show error
     if (!image || !image.url) {
-      hideContainer(container);
+      showError(container, ad.id, 'No image configured for this advertisement');
       return;
     }
 
@@ -124,6 +154,22 @@
     container.className = `time-based-advertisement time-based-advertisement--${ad.size}`;
     container.style.maxWidth = `${size.width}px`;
 
+    // In theme editor, show ad info header
+    if (isThemeEditor()) {
+      const infoHeader = document.createElement('div');
+      infoHeader.className = 'time-based-ad-info-header';
+      infoHeader.innerHTML = `
+        <div class="time-based-ad-info-header__content">
+          <strong>${ad.name}</strong>
+          <span class="time-based-ad-info-header__badge ${isInactive ? 'time-based-ad-info-header__badge--inactive' : ''}">
+            ${isInactive ? 'Inactive' : ad.size}
+          </span>
+        </div>
+        ${isInactive ? '<p class="time-based-ad-info-header__warning">This ad is currently inactive and won\'t show on the live site.</p>' : ''}
+      `;
+      container.appendChild(infoHeader);
+    }
+
     // Create wrapper for image and button
     const wrapper = document.createElement('div');
     wrapper.className = 'time-based-advertisement__wrapper';
@@ -134,6 +180,12 @@
     img.alt = image.alt || ad.name || 'Advertisement';
     img.className = 'time-based-advertisement__image';
     img.loading = 'lazy';
+
+    // Add inactive overlay in theme editor
+    if (isInactive && isThemeEditor()) {
+      img.style.opacity = '0.5';
+    }
+
     wrapper.appendChild(img);
 
     // Create button if enabled
@@ -191,4 +243,5 @@
 
   // Re-initialize when Shopify section is re-rendered (for theme editor)
   document.addEventListener('shopify:section:load', init);
+  document.addEventListener('shopify:block:select', init);
 })();

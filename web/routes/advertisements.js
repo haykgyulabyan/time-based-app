@@ -177,6 +177,21 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// POST /api/advertisements/sync-metafield - Manually sync metafield
+router.post("/sync-metafield", async (req, res) => {
+  try {
+    const session = res.locals.shopify.session;
+    const shopify = res.locals.shopify;
+
+    await syncAdvertisementsMetafield(session.shop, session, shopify);
+
+    res.json({ success: true, message: "Metafield synced successfully" });
+  } catch (error) {
+    console.error("[API] Error syncing metafield:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/advertisements/:id/duplicate - Duplicate advertisement
 router.post("/:id/duplicate", async (req, res) => {
   try {
