@@ -1,10 +1,5 @@
 {
   "version": 2,
-  "functions": {
-    "web/index.js": {
-      "maxDuration": 300
-    }
-  },
   "builds": [
     {
       "src": "package.json",
@@ -17,7 +12,8 @@
       "src": "web/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["web/frontend/dist/**"]
+        "includeFiles": ["web/frontend/dist/**"],
+        "maxDuration": 300
       }
     }
   ],
