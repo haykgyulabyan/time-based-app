@@ -23,7 +23,6 @@ router.get(
       }
 
       console.log("[App Proxy] Fetching banners for shop:", shop);
-      console.log("[App Proxy] Path:", path);
 
       // Get all active announcement bars for the shop
       const bars = await database.getActiveAnnouncementBars(shop);
