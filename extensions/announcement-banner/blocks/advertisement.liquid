@@ -30,17 +30,17 @@
       </div>
 
       {% if available_ads and available_ads.size > 0 %}
-        <p class="time-based-ad-selector__hint">Click an ad below, then enter its ID in the settings panel on the right.</p>
+        <p class="time-based-ad-selector__hint">Click the ID field to select it, then copy (Ctrl+C / Cmd+C) and paste into the settings panel.</p>
         <div class="time-based-ad-selector__list">
           {% for ad in available_ads %}
-            <div class="time-based-ad-selector__item" data-ad-id="{{ ad.id }}" onclick="navigator.clipboard.writeText('{{ ad.id }}'); this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000);">
+            <div class="time-based-ad-selector__item" data-ad-id="{{ ad.id }}">
               <div class="time-based-ad-selector__item-info">
                 <span class="time-based-ad-selector__item-name">{{ ad.name }}</span>
                 <span class="time-based-ad-selector__item-size">{{ ad.size }}</span>
               </div>
               <div class="time-based-ad-selector__item-id">
-                <span>ID: {{ ad.id }}</span>
-                <span class="time-based-ad-selector__copy-hint">Click to copy</span>
+                <span>ID:</span>
+                <input type="text" class="time-based-ad-selector__id-input" value="{{ ad.id }}" readonly onclick="this.select();">
               </div>
             </div>
           {% endfor %}
