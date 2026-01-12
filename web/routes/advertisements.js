@@ -14,8 +14,12 @@ async function verifyShopOwnership(id, shop) {
 // Helper to sync enabled advertisements to shop metafield
 async function syncAdvertisementsMetafield(shop, session, shopify) {
   try {
+    console.log(`[API] Starting metafield sync for shop: ${shop}`);
+
     // Get all enabled advertisements for this shop
     const advertisements = await database.getActiveAdvertisements(shop);
+    console.log(`[API] Found ${advertisements.length} active advertisements`);
+
     const adList = advertisements.map(ad => ({
       id: ad.id,
       name: ad.name,
@@ -35,9 +39,10 @@ async function syncAdvertisementsMetafield(shop, session, shopify) {
     });
 
     const shopGid = shopResponse.body.data.shop.id;
+    console.log(`[API] Shop GID: ${shopGid}`);
 
     // Update the metafield
-    await client.query({
+    const metafieldResponse = await client.query({
       data: {
         query: `
           mutation UpdateMetafield($metafields: [MetafieldsSetInput!]!) {
@@ -66,10 +71,18 @@ async function syncAdvertisementsMetafield(shop, session, shopify) {
       }
     });
 
-    console.log(`[API] Synced ${adList.length} advertisements to metafield for shop: ${shop}`);
+    // Check for userErrors
+    const userErrors = metafieldResponse.body.data?.metafieldsSet?.userErrors;
+    if (userErrors && userErrors.length > 0) {
+      console.error("[API] Metafield userErrors:", JSON.stringify(userErrors));
+      return { success: false, errors: userErrors };
+    }
+
+    console.log(`[API] Successfully synced ${adList.length} advertisements to metafield for shop: ${shop}`);
+    return { success: true, count: adList.length };
   } catch (error) {
-    console.error("[API] Error syncing advertisements metafield:", error);
-    // Don't throw - metafield sync failure shouldn't block the main operation
+    console.error("[API] Error syncing advertisements metafield:", error.message);
+    return { success: false, error: error.message };
   }
 }
 
@@ -117,11 +130,12 @@ router.post("/", async (req, res) => {
     const advertisement = await database.createAdvertisement(session.shop, data);
 
     // Sync to metafield if the new ad is enabled
+    let syncResult = null;
     if (advertisement.status) {
-      await syncAdvertisementsMetafield(session.shop, session, shopify);
+      syncResult = await syncAdvertisementsMetafield(session.shop, session, shopify);
     }
 
-    res.status(201).json({ advertisement });
+    res.status(201).json({ advertisement, syncResult });
   } catch (error) {
     console.error("[API] Error creating advertisement:", error);
     res.status(500).json({ error: error.message });
@@ -144,9 +158,9 @@ router.put("/:id", async (req, res) => {
     const advertisement = await database.updateAdvertisement(id, data);
 
     // Sync to metafield (status might have changed)
-    await syncAdvertisementsMetafield(session.shop, session, shopify);
+    const syncResult = await syncAdvertisementsMetafield(session.shop, session, shopify);
 
-    res.json({ advertisement });
+    res.json({ advertisement, syncResult });
   } catch (error) {
     console.error("[API] Error updating advertisement:", error);
     res.status(500).json({ error: error.message });
