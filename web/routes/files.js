@@ -71,8 +71,12 @@ router.post("/staged-upload", async (req, res) => {
 });
 
 // Helper function to poll for file readiness
-async function pollForFileReady(client, fileId, maxAttempts = 10, delayMs = 1000) {
+async function pollForFileReady(client, fileId, maxAttempts = 20, delayMs = 1500) {
+  console.log(`[API] Starting to poll for file ${fileId}, max ${maxAttempts} attempts`);
+
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    console.log(`[API] Poll attempt ${attempt + 1}/${maxAttempts} for file ${fileId}`);
+
     const response = await client.query({
       data: {
         query: `
@@ -105,18 +109,28 @@ async function pollForFileReady(client, fileId, maxAttempts = 10, delayMs = 1000
     });
 
     const node = response.body.data.node;
+    console.log(`[API] Poll response for ${fileId}:`, JSON.stringify(node, null, 2));
 
     if (node) {
       // Check if file is ready
       if (node.fileStatus === "READY") {
         if (node.image && node.image.url) {
+          console.log(`[API] File ${fileId} is ready with URL: ${node.image.url}`);
           return { url: node.image.url, type: "image", alt: node.alt, id: node.id };
         } else if (node.sources && node.sources.length > 0) {
+          console.log(`[API] Video ${fileId} is ready with URL: ${node.sources[0].url}`);
           return { url: node.sources[0].url, type: "video", alt: node.alt, id: node.id };
+        } else {
+          console.log(`[API] File ${fileId} is READY but no URL found yet, continuing poll...`);
         }
       } else if (node.fileStatus === "FAILED") {
+        console.error(`[API] File ${fileId} processing failed`);
         throw new Error("File processing failed");
+      } else {
+        console.log(`[API] File ${fileId} status: ${node.fileStatus}, waiting...`);
       }
+    } else {
+      console.log(`[API] No node found for ${fileId}, waiting...`);
     }
 
     // Wait before next attempt
@@ -125,7 +139,8 @@ async function pollForFileReady(client, fileId, maxAttempts = 10, delayMs = 1000
     }
   }
 
-  throw new Error("File processing timed out");
+  console.error(`[API] File ${fileId} processing timed out after ${maxAttempts} attempts`);
+  throw new Error("File processing timed out. Please try again.");
 }
 
 // POST /api/files/create - Create file from staged upload
@@ -197,6 +212,7 @@ router.post("/create", async (req, res) => {
     }
 
     const file = files[0];
+    console.log("[API] File created:", JSON.stringify(file, null, 2));
 
     // Check if URL is immediately available
     let url;
@@ -204,27 +220,32 @@ router.post("/create", async (req, res) => {
     if (file.image && file.image.url) {
       url = file.image.url;
       type = "image";
+      console.log("[API] Image URL immediately available:", url);
     } else if (file.sources && file.sources.length > 0 && file.sources[0].url) {
       url = file.sources[0].url;
       type = "video";
+      console.log("[API] Video URL immediately available:", url);
     }
 
     // If URL not ready, poll for it
     if (!url) {
-      console.log("[API] File not ready, polling...", file.id);
+      console.log("[API] File not ready immediately, starting poll for:", file.id);
       const readyFile = await pollForFileReady(client, file.id);
+      console.log("[API] Polling complete, returning file:", JSON.stringify(readyFile, null, 2));
       res.json({ file: readyFile });
       return;
     }
 
-    res.json({
+    const result = {
       file: {
         id: file.id,
         url,
         type,
         alt: file.alt,
       },
-    });
+    };
+    console.log("[API] Returning file result:", JSON.stringify(result, null, 2));
+    res.json(result);
   } catch (error) {
     console.error("[API] Error creating file:", error);
     res.status(500).json({ error: error.message });

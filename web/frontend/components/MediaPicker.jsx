@@ -131,6 +131,12 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
 
       const { file: createdFile } = await createResponse.json();
 
+      // Validate that we have a URL
+      if (!createdFile.url) {
+        console.error("File created but URL is missing:", createdFile);
+        throw new Error("File uploaded but URL not available. Please try again.");
+      }
+
       // Select the uploaded file
       onSelect({
         url: createdFile.url,
