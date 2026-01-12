@@ -70,6 +70,64 @@ router.post("/staged-upload", async (req, res) => {
   }
 });
 
+// Helper function to poll for file readiness
+async function pollForFileReady(client, fileId, maxAttempts = 10, delayMs = 1000) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const response = await client.query({
+      data: {
+        query: `
+          query getFile($id: ID!) {
+            node(id: $id) {
+              ... on MediaImage {
+                id
+                alt
+                image {
+                  url
+                  width
+                  height
+                }
+                fileStatus
+              }
+              ... on Video {
+                id
+                alt
+                sources {
+                  url
+                  mimeType
+                }
+                fileStatus
+              }
+            }
+          }
+        `,
+        variables: { id: fileId },
+      },
+    });
+
+    const node = response.body.data.node;
+
+    if (node) {
+      // Check if file is ready
+      if (node.fileStatus === "READY") {
+        if (node.image && node.image.url) {
+          return { url: node.image.url, type: "image", alt: node.alt, id: node.id };
+        } else if (node.sources && node.sources.length > 0) {
+          return { url: node.sources[0].url, type: "video", alt: node.alt, id: node.id };
+        }
+      } else if (node.fileStatus === "FAILED") {
+        throw new Error("File processing failed");
+      }
+    }
+
+    // Wait before next attempt
+    if (attempt < maxAttempts - 1) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw new Error("File processing timed out");
+}
+
 // POST /api/files/create - Create file from staged upload
 router.post("/create", async (req, res) => {
   try {
@@ -93,6 +151,7 @@ router.post("/create", async (req, res) => {
                 id
                 alt
                 createdAt
+                fileStatus
                 ... on MediaImage {
                   image {
                     url
@@ -139,15 +198,23 @@ router.post("/create", async (req, res) => {
 
     const file = files[0];
 
-    // Extract the URL based on file type
+    // Check if URL is immediately available
     let url;
     let type;
-    if (file.image) {
+    if (file.image && file.image.url) {
       url = file.image.url;
       type = "image";
-    } else if (file.sources && file.sources.length > 0) {
+    } else if (file.sources && file.sources.length > 0 && file.sources[0].url) {
       url = file.sources[0].url;
       type = "video";
+    }
+
+    // If URL not ready, poll for it
+    if (!url) {
+      console.log("[API] File not ready, polling...", file.id);
+      const readyFile = await pollForFileReady(client, file.id);
+      res.json({ file: readyFile });
+      return;
     }
 
     res.json({

@@ -97,6 +97,9 @@
     "create": {
       "title": "Create Slider Banner"
     },
+    "edit": {
+      "title": "Edit Slider Banner"
+    },
     "form": {
       "formatSelection": "Format Selection",
       "formatDescription": "Choose one aspect ratio for desktop slides and one for mobile slides. All slides must match their respective aspect ratios.",
