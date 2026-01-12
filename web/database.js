@@ -28,7 +28,6 @@ class PostgreSQLDatabase {
       };
     }
 
-    console.log("[Database] Initializing with SSL:", !!poolConfig.ssl);
     this.pool = new Pool(poolConfig);
   }
 
