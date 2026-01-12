@@ -591,15 +591,21 @@ export default function CreateSliderBanner() {
     setSaving(true);
     setError(null);
 
-    // Prepare slides data (remove File objects, keep preview URLs for demo)
+    // Prepare slides data - preserve media object (supports both Shopify CDN URLs and legacy base64)
     const slidesData = slides.map((slide) => ({
       ...slide,
       desktop: {
         ...slide.desktop,
         media: slide.desktop.media
           ? {
+              // New Shopify Files API format
+              url: slide.desktop.media.url,
+              id: slide.desktop.media.id,
+              alt: slide.desktop.media.alt,
+              // Legacy base64 format (backward compatibility)
               preview: slide.desktop.media.preview,
               name: slide.desktop.media.name,
+              // Common field
               type: slide.desktop.media.type,
             }
           : null,
@@ -608,8 +614,14 @@ export default function CreateSliderBanner() {
         ...slide.mobile,
         media: slide.mobile.media
           ? {
+              // New Shopify Files API format
+              url: slide.mobile.media.url,
+              id: slide.mobile.media.id,
+              alt: slide.mobile.media.alt,
+              // Legacy base64 format (backward compatibility)
               preview: slide.mobile.media.preview,
               name: slide.mobile.media.name,
+              // Common field
               type: slide.mobile.media.type,
             }
           : null,
