@@ -173,5 +173,21 @@
   "NotFound": {
     "heading": "Page not found",
     "description": "The page you're looking for doesn't exist"
+  },
+  "MediaPicker": {
+    "title": "Select media",
+    "uploadTab": "Upload new",
+    "browseTab": "Shop files",
+    "uploading": "Uploading to Shopify...",
+    "dropzoneAction": "Add file",
+    "dropzoneHint": "or drop files to upload",
+    "uploadHint": "Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM. Files are uploaded directly to your Shopify store.",
+    "searchPlaceholder": "Search files...",
+    "search": "Search",
+    "retry": "Try again",
+    "noFiles": "No files found. Upload some files first.",
+    "loadMore": "Load more",
+    "select": "Select",
+    "cancel": "Cancel"
   }
 }

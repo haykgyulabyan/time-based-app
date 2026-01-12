@@ -21,6 +21,7 @@ import {
   SkeletonBodyText,
 } from "@shopify/polaris";
 import { useAuthenticatedFetch } from "../../hooks/useAuthenticatedFetch";
+import { MediaPicker } from "../../components/MediaPicker";
 
 const DESKTOP_ASPECT_RATIOS = [
   { label: "Select ratio", value: "" },
@@ -121,6 +122,7 @@ function formatDateForInput(dateString) {
 function SlideCard({ slide, index, onUpdate, onRemove, canRemove, collections, productTypes }) {
   const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useState(0);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   const tabs = [
     { id: "desktop", content: t("SliderBanner.form.desktop") },
@@ -147,20 +149,13 @@ function SlideCard({ slide, index, onUpdate, onRemove, canRemove, collections, p
     });
   };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        handleDeviceUpdate("media", {
-          file: file,
-          preview: reader.result,
-          name: file.name,
-          type: file.type,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleMediaSelect = (media) => {
+    handleDeviceUpdate("media", {
+      url: media.url,
+      type: media.type,
+      alt: media.alt,
+      id: media.id,
+    });
   };
 
   const handleRemoveMedia = () => {
@@ -194,42 +189,58 @@ function SlideCard({ slide, index, onUpdate, onRemove, canRemove, collections, p
                 </Text>
                 {deviceData.media ? (
                   <div style={{ marginTop: "8px", position: "relative" }}>
-                    {deviceData.media.type?.startsWith("video/") ? (
-                      <video
-                        src={deviceData.media.preview}
-                        style={{
-                          width: "100%",
-                          maxHeight: "200px",
-                          objectFit: "contain",
-                          borderRadius: "8px",
-                          backgroundColor: "#f3f4f6",
-                        }}
-                        controls
-                      />
-                    ) : (
-                      <img
-                        src={deviceData.media.preview}
-                        alt="Preview"
-                        style={{
-                          width: "100%",
-                          maxHeight: "200px",
-                          objectFit: "contain",
-                          borderRadius: "8px",
-                          backgroundColor: "#f3f4f6",
-                        }}
-                      />
-                    )}
-                    <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Text variant="bodySm" tone="subdued" as="span">
-                        {deviceData.media.name}
-                      </Text>
-                      <Button variant="plain" tone="critical" onClick={handleRemoveMedia}>
-                        Remove
-                      </Button>
-                    </div>
+                    {(() => {
+                      const mediaUrl = deviceData.media.url || deviceData.media.preview;
+                      const isVideo = deviceData.media.type === "video" || deviceData.media.type?.startsWith("video/");
+                      const mediaLabel = deviceData.media.alt || deviceData.media.name || "Media selected";
+
+                      return (
+                        <>
+                          {isVideo ? (
+                            <video
+                              src={mediaUrl}
+                              style={{
+                                width: "100%",
+                                maxHeight: "200px",
+                                objectFit: "contain",
+                                borderRadius: "8px",
+                                backgroundColor: "#f3f4f6",
+                              }}
+                              controls
+                            />
+                          ) : (
+                            <img
+                              src={mediaUrl}
+                              alt={mediaLabel}
+                              style={{
+                                width: "100%",
+                                maxHeight: "200px",
+                                objectFit: "contain",
+                                borderRadius: "8px",
+                                backgroundColor: "#f3f4f6",
+                              }}
+                            />
+                          )}
+                          <div style={{ marginTop: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <Text variant="bodySm" tone="subdued" as="span">
+                              {mediaLabel}
+                            </Text>
+                            <LegacyStack spacing="tight">
+                              <Button variant="plain" onClick={() => setMediaPickerOpen(true)}>
+                                Change
+                              </Button>
+                              <Button variant="plain" tone="critical" onClick={handleRemoveMedia}>
+                                Remove
+                              </Button>
+                            </LegacyStack>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 ) : (
-                  <label
+                  <div
+                    onClick={() => setMediaPickerOpen(true)}
                     style={{
                       marginTop: "8px",
                       border: "2px dashed #d1d5db",
@@ -241,20 +252,20 @@ function SlideCard({ slide, index, onUpdate, onRemove, canRemove, collections, p
                       display: "block",
                     }}
                   >
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
-                      onChange={handleFileChange}
-                      style={{ display: "none" }}
-                    />
                     <Text variant="bodyMd" tone="subdued" as="p">
                       {t("SliderBanner.form.mediaUploadText")}
                     </Text>
                     <Text variant="bodySm" tone="subdued" as="p">
                       {t("SliderBanner.form.mediaUploadFormats")}
                     </Text>
-                  </label>
+                  </div>
                 )}
+                <MediaPicker
+                  open={mediaPickerOpen}
+                  onClose={() => setMediaPickerOpen(false)}
+                  onSelect={handleMediaSelect}
+                  allowedTypes={["image", "video"]}
+                />
               </div>
 
               {/* Link */}

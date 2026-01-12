@@ -202,12 +202,13 @@
     const mediaWrapper = document.createElement('div');
     mediaWrapper.className = 'time-based-slider__media-wrapper';
 
-    if (media && media.preview) {
-      const isVideo = media.type?.startsWith('video/');
+    const mediaUrl = media?.url || media?.preview;
+    if (media && mediaUrl) {
+      const isVideo = media.type === 'video' || media.type?.startsWith('video/');
 
       if (isVideo) {
         const video = document.createElement('video');
-        video.src = media.preview;
+        video.src = mediaUrl;
         video.className = 'time-based-slider__media';
         video.autoplay = true;
         video.loop = true;
@@ -216,8 +217,8 @@
         mediaWrapper.appendChild(video);
       } else {
         const img = document.createElement('img');
-        img.src = media.preview;
-        img.alt = media.name || `Slide ${index + 1}`;
+        img.src = mediaUrl;
+        img.alt = media.alt || media.name || `Slide ${index + 1}`;
         img.className = 'time-based-slider__media';
         img.loading = index === 0 ? 'eager' : 'lazy';
         mediaWrapper.appendChild(img);
