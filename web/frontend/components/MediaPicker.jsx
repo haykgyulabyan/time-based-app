@@ -1,32 +1,35 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Modal,
-  Tabs,
   DropZone,
-  LegacyStack,
   Text,
   Button,
   Spinner,
   InlineError,
   TextField,
   Icon,
+  ButtonGroup,
+  Badge,
+  ProgressBar,
 } from "@shopify/polaris";
-import { SearchIcon } from "@shopify/polaris-icons";
+import { SearchIcon, ImageIcon, PlayIcon } from "@shopify/polaris-icons";
 import { useAuthenticatedFetch } from "../hooks/useAuthenticatedFetch";
 import { useTranslation } from "react-i18next";
 
 export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", "video"] }) {
   const { t } = useTranslation();
   const authenticatedFetch = useAuthenticatedFetch();
-  const [selectedTab, setSelectedTab] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState(null);
   const [files, setFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [filesError, setFilesError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
   const [pageInfo, setPageInfo] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const searchTimeoutRef = useRef(null);
 
   const acceptedTypes = [];
   if (allowedTypes.includes("image")) {
@@ -36,6 +39,7 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
     acceptedTypes.push("video/mp4", "video/webm");
   }
 
+  // Load files on mount and when filter/search changes
   const loadFiles = useCallback(async (cursor = null, append = false) => {
     setLoadingFiles(true);
     setFilesError(null);
@@ -43,6 +47,7 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
       const params = new URLSearchParams();
       if (cursor) params.set("cursor", cursor);
       if (searchQuery) params.set("search", searchQuery);
+      if (activeFilter !== "all") params.set("type", activeFilter);
 
       const response = await authenticatedFetch(`/api/files?${params.toString()}`);
       if (!response.ok) {
@@ -64,24 +69,40 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
     } finally {
       setLoadingFiles(false);
     }
-  }, [authenticatedFetch, searchQuery, allowedTypes]);
+  }, [authenticatedFetch, searchQuery, activeFilter, allowedTypes]);
 
-  const handleTabChange = useCallback((index) => {
-    setSelectedTab(index);
-    if (index === 1 && files.length === 0) {
+  // Load files when modal opens
+  useEffect(() => {
+    if (open) {
       loadFiles();
+      setSelectedFile(null);
     }
-  }, [loadFiles, files.length]);
+  }, [open]);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      if (open) {
+        loadFiles();
+      }
+    }, 300);
+    return () => clearTimeout(searchTimeoutRef.current);
+  }, [searchQuery, activeFilter]);
 
   const handleDrop = useCallback(async (_dropFiles, acceptedFiles) => {
     if (acceptedFiles.length === 0) return;
 
     const file = acceptedFiles[0];
     setUploading(true);
+    setUploadProgress(0);
     setUploadError(null);
 
     try {
       // Step 1: Get staged upload URL
+      setUploadProgress(10);
       const stagedResponse = await authenticatedFetch("/api/files/staged-upload", {
         method: "POST",
         body: JSON.stringify({
@@ -99,6 +120,7 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
       const { stagedTarget } = await stagedResponse.json();
 
       // Step 2: Upload file directly to Shopify
+      setUploadProgress(30);
       const formData = new FormData();
       stagedTarget.parameters.forEach(({ name, value }) => {
         formData.append(name, value);
@@ -115,6 +137,7 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
       }
 
       // Step 3: Create file record in Shopify
+      setUploadProgress(70);
       const createResponse = await authenticatedFetch("/api/files/create", {
         method: "POST",
         body: JSON.stringify({
@@ -130,6 +153,7 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
       }
 
       const { file: createdFile } = await createResponse.json();
+      setUploadProgress(100);
 
       // Validate that we have a URL
       if (!createdFile.url) {
@@ -150,6 +174,7 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
       setUploadError(err.message);
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   }, [authenticatedFetch, onSelect, onClose]);
 
@@ -165,30 +190,235 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
     }
   }, [selectedFile, onSelect, onClose]);
 
-  const handleSearch = useCallback(() => {
-    loadFiles();
-  }, [loadFiles]);
-
   const handleLoadMore = useCallback(() => {
     if (pageInfo?.hasNextPage) {
       loadFiles(pageInfo.endCursor, true);
     }
   }, [loadFiles, pageInfo]);
 
-  const tabs = [
-    { id: "upload", content: t("MediaPicker.uploadTab", "Upload new") },
-    { id: "browse", content: t("MediaPicker.browseTab", "Shop files") },
-  ];
+  const handleFilterChange = useCallback((filter) => {
+    setActiveFilter(filter);
+    setSelectedFile(null);
+  }, []);
+
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  // Render file thumbnail with metadata
+  const renderFileThumbnail = (file) => {
+    const isSelected = selectedFile?.id === file.id;
+    const isVideo = file.type === "video";
+
+    return (
+      <div
+        key={file.id}
+        onClick={() => setSelectedFile(file)}
+        style={{
+          position: "relative",
+          borderRadius: "8px",
+          border: isSelected
+            ? "2px solid var(--p-color-border-interactive)"
+            : "2px solid var(--p-color-border-subdued)",
+          backgroundColor: isSelected
+            ? "var(--p-color-bg-surface-selected)"
+            : "var(--p-color-bg-surface)",
+          cursor: "pointer",
+          transition: "all 0.15s ease",
+          overflow: "hidden",
+        }}
+        onMouseOver={(e) => {
+          if (!isSelected) {
+            e.currentTarget.style.borderColor = "var(--p-color-border-hover)";
+            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+          }
+        }}
+        onMouseOut={(e) => {
+          if (!isSelected) {
+            e.currentTarget.style.borderColor = "var(--p-color-border-subdued)";
+            e.currentTarget.style.boxShadow = "none";
+          }
+        }}
+      >
+        {/* Thumbnail */}
+        <div
+          style={{
+            aspectRatio: "4/3",
+            backgroundColor: "#f3f4f6",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {isVideo ? (
+            file.preview ? (
+              <>
+                <img
+                  src={file.preview}
+                  alt={file.alt || "Video thumbnail"}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+                {/* Play icon overlay */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: "40px",
+                    height: "40px",
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon source={PlayIcon} tone="base" />
+                </div>
+              </>
+            ) : (
+              <div style={{ color: "#9ca3af" }}>
+                <Icon source={PlayIcon} tone="subdued" />
+              </div>
+            )
+          ) : (
+            <img
+              src={file.url}
+              alt={file.alt || "Image"}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          )}
+
+          {/* Video badge */}
+          {isVideo && (
+            <div
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: "8px",
+                backgroundColor: "rgba(0,0,0,0.7)",
+                color: "#fff",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                fontSize: "11px",
+                fontWeight: "500",
+              }}
+            >
+              VIDEO
+            </div>
+          )}
+
+          {/* Selection checkmark */}
+          {isSelected && (
+            <div
+              style={{
+                position: "absolute",
+                top: "8px",
+                left: "8px",
+                width: "20px",
+                height: "20px",
+                backgroundColor: "var(--p-color-bg-fill-success)",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M10 3L4.5 8.5L2 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          )}
+        </div>
+
+        {/* File info */}
+        <div style={{ padding: "8px" }}>
+          <Text variant="bodySm" as="p" truncate fontWeight="medium">
+            {file.alt || "Untitled"}
+          </Text>
+          <div style={{ display: "flex", gap: "8px", marginTop: "2px" }}>
+            <Text variant="bodySm" tone="subdued" as="span">
+              {isVideo ? "MP4" : file.mimeType?.split("/")[1]?.toUpperCase() || "IMG"}
+            </Text>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Loading skeleton
+  const renderSkeleton = () => (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+        gap: "16px",
+      }}
+    >
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          style={{
+            borderRadius: "8px",
+            border: "2px solid var(--p-color-border-subdued)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              aspectRatio: "4/3",
+              backgroundColor: "#e5e7eb",
+              animation: "pulse 2s ease-in-out infinite",
+            }}
+          />
+          <div style={{ padding: "8px" }}>
+            <div
+              style={{
+                height: "14px",
+                backgroundColor: "#e5e7eb",
+                borderRadius: "4px",
+                width: "80%",
+              }}
+            />
+            <div
+              style={{
+                height: "12px",
+                backgroundColor: "#e5e7eb",
+                borderRadius: "4px",
+                width: "40%",
+                marginTop: "4px",
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={t("MediaPicker.title", "Select media")}
+      title={t("MediaPicker.title", "Select file")}
       primaryAction={
-        selectedTab === 1 && selectedFile
+        selectedFile
           ? {
-              content: t("MediaPicker.select", "Select"),
+              content: t("MediaPicker.done", "Done"),
               onAction: handleSelectFile,
             }
           : undefined
@@ -202,172 +432,154 @@ export function MediaPicker({ open, onClose, onSelect, allowedTypes = ["image", 
       large
     >
       <Modal.Section>
-        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} fitted>
-          <div style={{ paddingTop: "16px", minHeight: "400px" }}>
-            {selectedTab === 0 && (
-              <div>
-                <DropZone
-                  accept={acceptedTypes.join(",")}
-                  type="file"
-                  onDrop={handleDrop}
-                  disabled={uploading}
-                >
-                  {uploading ? (
-                    <div style={{ padding: "40px", textAlign: "center" }}>
-                      <Spinner size="large" />
-                      <div style={{ marginTop: "16px" }}>
-                        <Text variant="bodyMd" as="p">
-                          {t("MediaPicker.uploading", "Uploading to Shopify...")}
-                        </Text>
-                      </div>
-                    </div>
-                  ) : (
-                    <DropZone.FileUpload
-                      actionTitle={t("MediaPicker.dropzoneAction", "Add file")}
-                      actionHint={t("MediaPicker.dropzoneHint", "or drop files to upload")}
-                    />
-                  )}
-                </DropZone>
-                {uploadError && (
-                  <div style={{ marginTop: "16px" }}>
-                    <InlineError message={uploadError} fieldID="upload-error" />
-                  </div>
-                )}
-                <div style={{ marginTop: "16px" }}>
+        {/* Search bar */}
+        <div style={{ marginBottom: "16px" }}>
+          <TextField
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder={t("MediaPicker.searchPlaceholder", "Search files")}
+            prefix={<Icon source={SearchIcon} />}
+            autoComplete="off"
+            clearButton
+            onClearButtonClick={() => setSearchQuery("")}
+          />
+        </div>
+
+        {/* Filter buttons */}
+        <div style={{ marginBottom: "16px", display: "flex", gap: "8px", alignItems: "center" }}>
+          <Text variant="bodySm" fontWeight="medium" as="span">
+            {t("MediaPicker.fileType", "File type")}
+          </Text>
+          <ButtonGroup segmented>
+            <Button
+              pressed={activeFilter === "all"}
+              onClick={() => handleFilterChange("all")}
+              size="slim"
+            >
+              {t("MediaPicker.all", "All")}
+            </Button>
+            {allowedTypes.includes("image") && (
+              <Button
+                pressed={activeFilter === "image"}
+                onClick={() => handleFilterChange("image")}
+                size="slim"
+              >
+                {t("MediaPicker.images", "Images")}
+              </Button>
+            )}
+            {allowedTypes.includes("video") && (
+              <Button
+                pressed={activeFilter === "video"}
+                onClick={() => handleFilterChange("video")}
+                size="slim"
+              >
+                {t("MediaPicker.videos", "Videos")}
+              </Button>
+            )}
+          </ButtonGroup>
+        </div>
+
+        {/* Upload area */}
+        <div style={{ marginBottom: "20px" }}>
+          <DropZone
+            accept={acceptedTypes.join(",")}
+            type="file"
+            onDrop={handleDrop}
+            disabled={uploading}
+            variableHeight
+          >
+            {uploading ? (
+              <div style={{ padding: "24px", textAlign: "center" }}>
+                <div style={{ marginBottom: "12px" }}>
+                  <ProgressBar progress={uploadProgress} size="small" />
+                </div>
+                <Text variant="bodySm" as="p">
+                  {uploadProgress < 70
+                    ? t("MediaPicker.uploading", "Uploading...")
+                    : t("MediaPicker.processing", "Processing...")}
+                </Text>
+              </div>
+            ) : (
+              <div style={{ padding: "16px", textAlign: "center" }}>
+                <Button>
+                  {t("MediaPicker.addMedia", "Add media")}
+                </Button>
+                <div style={{ marginTop: "8px" }}>
                   <Text variant="bodySm" tone="subdued" as="p">
-                    {t("MediaPicker.uploadHint", "Supported formats: JPEG, PNG, WebP, GIF, MP4, WebM. Files are uploaded directly to your Shopify store.")}
+                    {t("MediaPicker.dropHint", "Drag and drop images and videos")}
                   </Text>
                 </div>
               </div>
             )}
+          </DropZone>
+          {uploadError && (
+            <div style={{ marginTop: "8px" }}>
+              <InlineError message={uploadError} fieldID="upload-error" />
+            </div>
+          )}
+        </div>
 
-            {selectedTab === 1 && (
-              <div>
-                <div style={{ marginBottom: "16px" }}>
-                  <LegacyStack>
-                    <LegacyStack.Item fill>
-                      <TextField
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                        placeholder={t("MediaPicker.searchPlaceholder", "Search files...")}
-                        prefix={<Icon source={SearchIcon} />}
-                        autoComplete="off"
-                        onBlur={handleSearch}
-                        connectedRight={
-                          <Button onClick={handleSearch}>
-                            {t("MediaPicker.search", "Search")}
-                          </Button>
-                        }
-                      />
-                    </LegacyStack.Item>
-                  </LegacyStack>
-                </div>
-
-                {loadingFiles && files.length === 0 ? (
-                  <div style={{ padding: "40px", textAlign: "center" }}>
-                    <Spinner size="large" />
-                  </div>
-                ) : filesError ? (
-                  <div style={{ padding: "20px", textAlign: "center" }}>
-                    <InlineError message={filesError} fieldID="files-error" />
-                    <div style={{ marginTop: "16px" }}>
-                      <Button onClick={() => loadFiles()}>
-                        {t("MediaPicker.retry", "Try again")}
-                      </Button>
-                    </div>
-                  </div>
-                ) : files.length === 0 ? (
-                  <div style={{ padding: "40px", textAlign: "center" }}>
-                    <Text variant="bodyMd" tone="subdued" as="p">
-                      {t("MediaPicker.noFiles", "No files found. Upload some files first.")}
-                    </Text>
-                  </div>
-                ) : (
-                  <div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-                        gap: "12px",
-                      }}
-                    >
-                      {files.map((file) => (
-                        <div
-                          key={file.id}
-                          onClick={() => setSelectedFile(file)}
-                          style={{
-                            padding: "8px",
-                            borderRadius: "8px",
-                            border: selectedFile?.id === file.id
-                              ? "2px solid var(--p-color-border-interactive)"
-                              : "2px solid transparent",
-                            backgroundColor: selectedFile?.id === file.id
-                              ? "var(--p-color-bg-surface-selected)"
-                              : "var(--p-color-bg-surface-secondary)",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                          }}
-                        >
-                          <div
-                            style={{
-                              aspectRatio: "1",
-                              borderRadius: "4px",
-                              overflow: "hidden",
-                              backgroundColor: "#f3f4f6",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            {file.type === "video" ? (
-                              file.preview ? (
-                                <img
-                                  src={file.preview}
-                                  alt={file.alt || "Video thumbnail"}
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              ) : (
-                                <Text variant="bodySm" tone="subdued">Video</Text>
-                              )
-                            ) : (
-                              <img
-                                src={file.url}
-                                alt={file.alt || "Image"}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  objectFit: "cover",
-                                }}
-                              />
-                            )}
-                          </div>
-                          <div style={{ marginTop: "4px" }}>
-                            <Text variant="bodySm" as="p" truncate>
-                              {file.alt || "Untitled"}
-                            </Text>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {pageInfo?.hasNextPage && (
-                      <div style={{ marginTop: "20px", textAlign: "center" }}>
-                        <Button onClick={handleLoadMore} loading={loadingFiles}>
-                          {t("MediaPicker.loadMore", "Load more")}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
+        {/* File grid */}
+        <div style={{ minHeight: "300px" }}>
+          {loadingFiles && files.length === 0 ? (
+            renderSkeleton()
+          ) : filesError ? (
+            <div style={{ padding: "40px", textAlign: "center" }}>
+              <InlineError message={filesError} fieldID="files-error" />
+              <div style={{ marginTop: "16px" }}>
+                <Button onClick={() => loadFiles()}>
+                  {t("MediaPicker.retry", "Try again")}
+                </Button>
               </div>
-            )}
-          </div>
-        </Tabs>
+            </div>
+          ) : files.length === 0 ? (
+            <div style={{ padding: "40px", textAlign: "center" }}>
+              <div style={{ marginBottom: "8px", color: "#9ca3af" }}>
+                <Icon source={ImageIcon} />
+              </div>
+              <Text variant="bodyMd" tone="subdued" as="p">
+                {searchQuery
+                  ? t("MediaPicker.noResults", "No files match your search")
+                  : t("MediaPicker.noFiles", "No files uploaded yet")}
+              </Text>
+              {searchQuery && (
+                <div style={{ marginTop: "12px" }}>
+                  <Button plain onClick={() => setSearchQuery("")}>
+                    {t("MediaPicker.clearSearch", "Clear search")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                  gap: "16px",
+                }}
+              >
+                {files.map(renderFileThumbnail)}
+              </div>
+
+              {pageInfo?.hasNextPage && (
+                <div style={{ marginTop: "20px", textAlign: "center" }}>
+                  <Button onClick={handleLoadMore} loading={loadingFiles}>
+                    {t("MediaPicker.loadMore", "Load more")}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </Modal.Section>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
     </Modal>
   );
 }

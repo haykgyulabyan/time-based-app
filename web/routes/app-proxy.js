@@ -216,9 +216,10 @@ router.get(
 
 /**
  * App Proxy route for advertisements on storefront
- * GET /advertisements?shop=...&id=...
+ * GET /advertisements?shop=...&id=...  (single ad)
+ * GET /advertisements?shop=...&ids=1,2,3  (batch - multiple ads)
  *
- * Returns a single advertisement by ID for rendering in theme blocks
+ * Returns advertisement(s) by ID for rendering in theme blocks
  * Schedule checking is done client-side to allow for caching
  */
 router.get(
@@ -226,28 +227,10 @@ router.get(
   appProxyAuthMiddleware(process.env.SHOPIFY_API_SECRET),
   async (req, res) => {
     try {
-      const { shop, id } = req.query;
+      const { shop, id, ids } = req.query;
 
       if (!shop) {
         return res.status(400).json({ error: "Missing shop parameter" });
-      }
-
-      if (!id) {
-        return res.status(400).json({ error: "Missing id parameter" });
-      }
-
-      console.log("[App Proxy] Fetching advertisement for shop:", shop, "id:", id);
-
-      // Get the specific advertisement
-      const ad = await database.getAdvertisementById(id);
-
-      if (!ad) {
-        return res.status(404).json({ error: "Advertisement not found" });
-      }
-
-      // Verify the ad belongs to this shop
-      if (ad.shop !== shop) {
-        return res.status(404).json({ error: "Advertisement not found" });
       }
 
       // Helper to construct link URL based on link type
@@ -268,31 +251,69 @@ router.get(
         }
       };
 
-      // Format response for client-side rendering
-      const response = {
-        advertisement: {
-          id: ad.id,
-          name: ad.name,
-          status: ad.status,
-          size: ad.size,
-          desktopImage: ad.desktopImage,
-          mobileImage: ad.mobileImage,
-          buttonEnabled: ad.buttonEnabled,
-          buttonText: ad.buttonText,
-          buttonLinkUrl: constructLinkUrl(ad),
-          buttonBgColor: ad.buttonBgColor,
-          buttonTextColor: ad.buttonTextColor,
-          buttonTextSize: ad.buttonTextSize,
-          buttonPlacement: ad.buttonPlacement,
-          schedulingEnabled: ad.schedulingEnabled,
-          startDate: ad.startDate,
-          endDate: ad.endDate,
-        },
-      };
+      // Format ad for response
+      const formatAd = (ad) => ({
+        id: ad.id,
+        name: ad.name,
+        status: ad.status,
+        size: ad.size,
+        desktopImage: ad.desktopImage,
+        mobileImage: ad.mobileImage,
+        buttonEnabled: ad.buttonEnabled,
+        buttonText: ad.buttonText,
+        buttonLinkUrl: constructLinkUrl(ad),
+        buttonBgColor: ad.buttonBgColor,
+        buttonTextColor: ad.buttonTextColor,
+        buttonTextSize: ad.buttonTextSize,
+        buttonPlacement: ad.buttonPlacement,
+        schedulingEnabled: ad.schedulingEnabled,
+        startDate: ad.startDate,
+        endDate: ad.endDate,
+      });
 
-      // Set cache headers (cache for 5 minutes, client handles schedule checking)
+      // Handle batch request (multiple IDs)
+      if (ids) {
+        const idList = ids.split(',').map(i => i.trim()).filter(Boolean);
+        console.log("[App Proxy] Fetching advertisements batch for shop:", shop, "ids:", idList);
+
+        // Fetch all ads in parallel
+        const adPromises = idList.map(adId => database.getAdvertisementById(adId));
+        const ads = await Promise.all(adPromises);
+
+        // Filter valid ads that belong to this shop
+        const validAds = ads
+          .filter(ad => ad && ad.shop === shop)
+          .map(formatAd);
+
+        // Return as a map for easy lookup by ID
+        const advertisementsMap = {};
+        validAds.forEach(ad => {
+          advertisementsMap[ad.id] = ad;
+        });
+
+        res.set("Cache-Control", "public, max-age=300");
+        return res.json({ advertisements: advertisementsMap });
+      }
+
+      // Handle single ad request (backward compatible)
+      if (!id) {
+        return res.status(400).json({ error: "Missing id or ids parameter" });
+      }
+
+      console.log("[App Proxy] Fetching advertisement for shop:", shop, "id:", id);
+
+      const ad = await database.getAdvertisementById(id);
+
+      if (!ad) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+
+      if (ad.shop !== shop) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+
       res.set("Cache-Control", "public, max-age=300");
-      res.json(response);
+      res.json({ advertisement: formatAd(ad) });
     } catch (error) {
       console.error("[App Proxy] Error fetching advertisement:", error);
       res.status(500).json({ error: error.message });

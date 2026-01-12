@@ -11,11 +11,20 @@
     '4x1': { width: 1434, height: 525 }
   };
 
+  // Cache for fetched ads (in-memory, session-based)
+  const adCache = new Map();
+
   /**
    * Initialize all advertisement blocks on the page
+   * Uses batch fetching for performance
    */
-  function init() {
+  async function init() {
     const adContainers = document.querySelectorAll('.time-based-advertisement[data-ad-id]');
+
+    // Collect containers that need fetching
+    const containersToFetch = [];
+    const adIds = new Set();
+    let shop = null;
 
     adContainers.forEach(container => {
       const adId = container.dataset.adId;
@@ -30,51 +39,81 @@
         return;
       }
 
-      fetchAdvertisement(container, adId);
-    });
-  }
+      // Check cache first
+      if (adCache.has(adId)) {
+        const cachedAd = adCache.get(adId);
+        processAdForContainer(container, cachedAd, adId);
+        return;
+      }
 
-  /**
-   * Fetch advertisement data from app proxy
-   */
-  async function fetchAdvertisement(container, adId) {
+      containersToFetch.push({ container, adId });
+      adIds.add(adId);
+      shop = shop || container.dataset.shop;
+    });
+
+    // If no ads to fetch, we're done
+    if (adIds.size === 0 || !shop) {
+      return;
+    }
+
+    // Batch fetch all ads in one request
     try {
-      const shop = container.dataset.shop;
-      const response = await fetch(`${APP_PROXY_PATH}?id=${adId}&shop=${shop}`);
+      const idsParam = Array.from(adIds).join(',');
+      const response = await fetch(`${APP_PROXY_PATH}?ids=${idsParam}&shop=${shop}`);
 
       if (!response.ok) {
-        console.error('Time-based App: Failed to load advertisement', response.status);
-        showError(container, adId, 'Advertisement not found');
+        console.error('Time-based App: Failed to load advertisements', response.status);
+        containersToFetch.forEach(({ container, adId }) => {
+          showError(container, adId, 'Advertisement not found');
+        });
         return;
       }
 
       const data = await response.json();
-      const ad = data.advertisement;
+      const adsMap = data.advertisements || {};
 
-      if (!ad) {
-        showError(container, adId, 'Advertisement not found');
-        return;
-      }
+      // Cache and render each ad
+      Object.entries(adsMap).forEach(([id, ad]) => {
+        adCache.set(id, ad);
+      });
 
-      // Check if ad is active (status + schedule)
-      if (!isAdActive(ad)) {
-        // In theme editor, show preview anyway but indicate it's inactive
-        if (isThemeEditor()) {
-          renderAdvertisement(container, ad, true);
-        } else {
-          hideContainer(container);
-        }
-        return;
-      }
-
-      // Render the advertisement
-      renderAdvertisement(container, ad, false);
-      container.dataset.rendered = 'true';
+      // Process each container with its ad
+      containersToFetch.forEach(({ container, adId }) => {
+        const ad = adsMap[adId];
+        processAdForContainer(container, ad, adId);
+      });
 
     } catch (error) {
-      console.error('Time-based App: Error loading advertisement', error);
-      showError(container, adId, 'Failed to load advertisement');
+      console.error('Time-based App: Error loading advertisements', error);
+      containersToFetch.forEach(({ container, adId }) => {
+        showError(container, adId, 'Failed to load advertisement');
+      });
     }
+  }
+
+  /**
+   * Process a single ad for a container (render or show error)
+   */
+  function processAdForContainer(container, ad, adId) {
+    if (!ad) {
+      showError(container, adId, 'Advertisement not found');
+      return;
+    }
+
+    // Check if ad is active (status + schedule)
+    if (!isAdActive(ad)) {
+      // In theme editor, show preview anyway but indicate it's inactive
+      if (isThemeEditor()) {
+        renderAdvertisement(container, ad, true);
+      } else {
+        hideContainer(container);
+      }
+      return;
+    }
+
+    // Render the advertisement
+    renderAdvertisement(container, ad, false);
+    container.dataset.rendered = 'true';
   }
 
   /**
@@ -214,18 +253,33 @@
 
   /**
    * Handle window resize for responsive behavior
+   * Uses cached data - no network request needed
    */
   let resizeTimeout;
+  let lastWidth = window.innerWidth;
+
   function handleResize() {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-      // Re-render all rendered ads
+      // Only re-render if crossing mobile/desktop threshold
+      const currentWidth = window.innerWidth;
+      const wasMobile = lastWidth < 768;
+      const isMobile = currentWidth < 768;
+
+      if (wasMobile === isMobile) {
+        lastWidth = currentWidth;
+        return; // No need to re-render
+      }
+
+      lastWidth = currentWidth;
+
+      // Re-render all rendered ads using cached data
       const adContainers = document.querySelectorAll('.time-based-advertisement[data-rendered="true"]');
       adContainers.forEach(container => {
-        container.dataset.rendered = 'false';
         const adId = container.dataset.adId;
-        if (adId) {
-          fetchAdvertisement(container, adId);
+        if (adId && adCache.has(adId)) {
+          const ad = adCache.get(adId);
+          renderAdvertisement(container, ad, false);
         }
       });
     }, 250);

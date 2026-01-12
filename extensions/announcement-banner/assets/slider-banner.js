@@ -443,12 +443,18 @@
       }
 
       // Clone target media into stripe
+      // The clone must match the original slide's dimensions exactly to avoid zoom effect
       if (toMedia) {
         const clone = toMedia.cloneNode(true);
+        // Get the computed style of the original media to match exactly
+        const originalStyle = window.getComputedStyle(toMedia);
         clone.style.cssText = `
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: ${originalStyle.width};
+          height: ${originalStyle.height};
+          object-fit: ${originalStyle.objectFit || 'cover'};
         `;
         inner.appendChild(clone);
       }
