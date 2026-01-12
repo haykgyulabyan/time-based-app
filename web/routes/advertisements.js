@@ -1,5 +1,6 @@
 import express from "express";
 import database from "../database.js";
+import shopify from "../shopify.js";
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ async function verifyShopOwnership(id, shop) {
 }
 
 // Helper to sync enabled advertisements to shop metafield
-async function syncAdvertisementsMetafield(shop, session, shopify) {
+async function syncAdvertisementsMetafield(shop, session) {
   try {
     console.log(`[API] Starting metafield sync for shop: ${shop}`);
 
@@ -26,7 +27,7 @@ async function syncAdvertisementsMetafield(shop, session, shopify) {
       size: ad.size
     }));
 
-    // Get shop ID from session
+    // Get shop ID from session - use imported shopify module
     const client = new shopify.api.clients.Graphql({ session });
 
     // First, get the shop's GID
@@ -120,7 +121,6 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const session = res.locals.shopify.session;
-    const shopify = res.locals.shopify;
     const data = req.body;
 
     if (!data.name) {
@@ -132,7 +132,7 @@ router.post("/", async (req, res) => {
     // Sync to metafield if the new ad is enabled
     let syncResult = null;
     if (advertisement.status) {
-      syncResult = await syncAdvertisementsMetafield(session.shop, session, shopify);
+      syncResult = await syncAdvertisementsMetafield(session.shop, session);
     }
 
     res.status(201).json({ advertisement, syncResult });
@@ -146,7 +146,6 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const session = res.locals.shopify.session;
-    const shopify = res.locals.shopify;
     const { id } = req.params;
     const data = req.body;
 
@@ -158,7 +157,7 @@ router.put("/:id", async (req, res) => {
     const advertisement = await database.updateAdvertisement(id, data);
 
     // Sync to metafield (status might have changed)
-    const syncResult = await syncAdvertisementsMetafield(session.shop, session, shopify);
+    const syncResult = await syncAdvertisementsMetafield(session.shop, session);
 
     res.json({ advertisement, syncResult });
   } catch (error) {
@@ -171,7 +170,6 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const session = res.locals.shopify.session;
-    const shopify = res.locals.shopify;
     const { id } = req.params;
 
     const verification = await verifyShopOwnership(id, session.shop);
@@ -182,7 +180,7 @@ router.delete("/:id", async (req, res) => {
     await database.deleteAdvertisement(id);
 
     // Sync to metafield (ad was removed)
-    await syncAdvertisementsMetafield(session.shop, session, shopify);
+    await syncAdvertisementsMetafield(session.shop, session);
 
     res.json({ success: true });
   } catch (error) {
@@ -195,11 +193,10 @@ router.delete("/:id", async (req, res) => {
 router.post("/sync-metafield", async (req, res) => {
   try {
     const session = res.locals.shopify.session;
-    const shopify = res.locals.shopify;
 
-    await syncAdvertisementsMetafield(session.shop, session, shopify);
+    const syncResult = await syncAdvertisementsMetafield(session.shop, session);
 
-    res.json({ success: true, message: "Metafield synced successfully" });
+    res.json({ success: true, message: "Metafield synced successfully", syncResult });
   } catch (error) {
     console.error("[API] Error syncing metafield:", error);
     res.status(500).json({ error: error.message });
@@ -210,7 +207,6 @@ router.post("/sync-metafield", async (req, res) => {
 router.post("/:id/duplicate", async (req, res) => {
   try {
     const session = res.locals.shopify.session;
-    const shopify = res.locals.shopify;
     const { id } = req.params;
 
     const verification = await verifyShopOwnership(id, session.shop);
@@ -221,11 +217,12 @@ router.post("/:id/duplicate", async (req, res) => {
     const advertisement = await database.duplicateAdvertisement(id, session.shop);
 
     // Sync to metafield if the duplicated ad is enabled
+    let syncResult = null;
     if (advertisement.status) {
-      await syncAdvertisementsMetafield(session.shop, session, shopify);
+      syncResult = await syncAdvertisementsMetafield(session.shop, session);
     }
 
-    res.status(201).json({ advertisement });
+    res.status(201).json({ advertisement, syncResult });
   } catch (error) {
     console.error("[API] Error duplicating advertisement:", error);
     res.status(500).json({ error: error.message });
