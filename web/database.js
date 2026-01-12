@@ -126,6 +126,53 @@ class PostgreSQLDatabase {
       CREATE INDEX IF NOT EXISTS idx_slider_banners_status ON slider_banners(status)
     `);
 
+    // Create advertisements table
+    await this.query(`
+      CREATE TABLE IF NOT EXISTS advertisements (
+        id SERIAL PRIMARY KEY,
+        shop VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        status BOOLEAN DEFAULT true,
+
+        -- Size: 1x1, 2x1, 3x1, 4x1
+        size VARCHAR(10) NOT NULL DEFAULT '1x1',
+
+        -- Desktop image (Shopify CDN)
+        desktop_image JSONB,
+
+        -- Mobile image (Shopify CDN)
+        mobile_image JSONB,
+
+        -- Button settings
+        button_enabled BOOLEAN DEFAULT false,
+        button_text VARCHAR(255),
+        button_link_type VARCHAR(50),
+        button_link_value VARCHAR(500),
+        button_bg_color VARCHAR(7) DEFAULT '#2e7d32',
+        button_text_color VARCHAR(7) DEFAULT '#ffffff',
+        button_text_size VARCHAR(10) DEFAULT '16px',
+        button_placement VARCHAR(20) DEFAULT 'center',
+
+        -- Scheduling
+        scheduling_enabled BOOLEAN DEFAULT false,
+        start_date TIMESTAMP WITH TIME ZONE,
+        end_date TIMESTAMP WITH TIME ZONE,
+
+        priority INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create indexes for advertisements
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS idx_advertisements_shop ON advertisements(shop)
+    `);
+
+    await this.query(`
+      CREATE INDEX IF NOT EXISTS idx_advertisements_status ON advertisements(status)
+    `);
+
     console.log("[Database] PostgreSQL initialized successfully");
   }
 
@@ -466,6 +513,165 @@ class Database {
     };
   }
 
+  // ==================== ADVERTISEMENT OPERATIONS ====================
+
+  async createAdvertisement(shop, data) {
+    const result = await this.query(
+      `INSERT INTO advertisements (
+        shop, name, status, size,
+        desktop_image, mobile_image,
+        button_enabled, button_text, button_link_type, button_link_value,
+        button_bg_color, button_text_color, button_text_size, button_placement,
+        scheduling_enabled, start_date, end_date, priority
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING *`,
+      [
+        shop,
+        data.name,
+        data.status ?? true,
+        data.size || '1x1',
+        JSON.stringify(data.desktopImage || null),
+        JSON.stringify(data.mobileImage || null),
+        data.buttonEnabled ?? false,
+        data.buttonText || null,
+        data.buttonLinkType || null,
+        data.buttonLinkValue || null,
+        data.buttonBgColor || '#2e7d32',
+        data.buttonTextColor || '#ffffff',
+        data.buttonTextSize || '16px',
+        data.buttonPlacement || 'center',
+        data.schedulingEnabled ?? false,
+        data.startDate || null,
+        data.endDate || null,
+        data.priority ?? 0
+      ]
+    );
+    return this.parseAdvertisement(result.rows[0]);
+  }
+
+  async getAllAdvertisements(shop) {
+    const result = await this.query(
+      `SELECT * FROM advertisements
+       WHERE shop = ?
+       ORDER BY priority DESC, created_at DESC`,
+      [shop]
+    );
+    return result.rows.map(row => this.parseAdvertisement(row));
+  }
+
+  async getAdvertisementById(id) {
+    const result = await this.query(
+      "SELECT * FROM advertisements WHERE id = ?",
+      [id]
+    );
+    if (!result.rows[0]) return null;
+    return this.parseAdvertisement(result.rows[0]);
+  }
+
+  async getActiveAdvertisements(shop) {
+    const result = await this.query(
+      `SELECT * FROM advertisements
+       WHERE shop = ? AND status = true
+       ORDER BY priority DESC`,
+      [shop]
+    );
+    return result.rows.map(row => this.parseAdvertisement(row));
+  }
+
+  async updateAdvertisement(id, data) {
+    const result = await this.query(
+      `UPDATE advertisements SET
+        name = ?,
+        status = ?,
+        size = ?,
+        desktop_image = ?,
+        mobile_image = ?,
+        button_enabled = ?,
+        button_text = ?,
+        button_link_type = ?,
+        button_link_value = ?,
+        button_bg_color = ?,
+        button_text_color = ?,
+        button_text_size = ?,
+        button_placement = ?,
+        scheduling_enabled = ?,
+        start_date = ?,
+        end_date = ?,
+        priority = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      RETURNING *`,
+      [
+        data.name,
+        data.status ?? true,
+        data.size || '1x1',
+        JSON.stringify(data.desktopImage || null),
+        JSON.stringify(data.mobileImage || null),
+        data.buttonEnabled ?? false,
+        data.buttonText || null,
+        data.buttonLinkType || null,
+        data.buttonLinkValue || null,
+        data.buttonBgColor || '#2e7d32',
+        data.buttonTextColor || '#ffffff',
+        data.buttonTextSize || '16px',
+        data.buttonPlacement || 'center',
+        data.schedulingEnabled ?? false,
+        data.startDate || null,
+        data.endDate || null,
+        data.priority ?? 0,
+        id
+      ]
+    );
+    return this.parseAdvertisement(result.rows[0]);
+  }
+
+  async deleteAdvertisement(id) {
+    await this.query("DELETE FROM advertisements WHERE id = ?", [id]);
+  }
+
+  async duplicateAdvertisement(id, shop) {
+    const original = await this.getAdvertisementById(id);
+    if (!original) return null;
+
+    const newData = {
+      ...original,
+      name: original.name ? `${original.name} (Copy)` : 'Copy',
+    };
+    delete newData.id;
+    delete newData.createdAt;
+    delete newData.updatedAt;
+
+    return await this.createAdvertisement(shop, newData);
+  }
+
+  // Helper to parse advertisement JSON fields
+  parseAdvertisement(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      shop: row.shop,
+      name: row.name,
+      status: row.status,
+      size: row.size,
+      desktopImage: typeof row.desktop_image === 'string' ? JSON.parse(row.desktop_image) : row.desktop_image,
+      mobileImage: typeof row.mobile_image === 'string' ? JSON.parse(row.mobile_image) : row.mobile_image,
+      buttonEnabled: row.button_enabled,
+      buttonText: row.button_text,
+      buttonLinkType: row.button_link_type,
+      buttonLinkValue: row.button_link_value,
+      buttonBgColor: row.button_bg_color,
+      buttonTextColor: row.button_text_color,
+      buttonTextSize: row.button_text_size,
+      buttonPlacement: row.button_placement,
+      schedulingEnabled: row.scheduling_enabled,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      priority: row.priority,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
   // GDPR compliance - delete all shop data
   async deleteShopData(shop) {
     console.log(`[Database] Deleting all data for shop: ${shop}`);
@@ -477,9 +683,14 @@ class Database {
       "DELETE FROM slider_banners WHERE shop = ?",
       [shop]
     );
+    const advertisementResult = await this.query(
+      "DELETE FROM advertisements WHERE shop = ?",
+      [shop]
+    );
     console.log(`[Database] Deleted ${announcementResult.rowCount || 0} announcement bars for shop: ${shop}`);
     console.log(`[Database] Deleted ${sliderResult.rowCount || 0} slider banners for shop: ${shop}`);
-    return (announcementResult.rowCount || 0) + (sliderResult.rowCount || 0);
+    console.log(`[Database] Deleted ${advertisementResult.rowCount || 0} advertisements for shop: ${shop}`);
+    return (announcementResult.rowCount || 0) + (sliderResult.rowCount || 0) + (advertisementResult.rowCount || 0);
   }
 
   close() {

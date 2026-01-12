@@ -214,4 +214,90 @@ router.get(
   }
 );
 
+/**
+ * App Proxy route for advertisements on storefront
+ * GET /advertisements?shop=...&id=...
+ *
+ * Returns a single advertisement by ID for rendering in theme blocks
+ * Schedule checking is done client-side to allow for caching
+ */
+router.get(
+  "/advertisements",
+  appProxyAuthMiddleware(process.env.SHOPIFY_API_SECRET),
+  async (req, res) => {
+    try {
+      const { shop, id } = req.query;
+
+      if (!shop) {
+        return res.status(400).json({ error: "Missing shop parameter" });
+      }
+
+      if (!id) {
+        return res.status(400).json({ error: "Missing id parameter" });
+      }
+
+      console.log("[App Proxy] Fetching advertisement for shop:", shop, "id:", id);
+
+      // Get the specific advertisement
+      const ad = await database.getAdvertisementById(id);
+
+      if (!ad) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+
+      // Verify the ad belongs to this shop
+      if (ad.shop !== shop) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+
+      // Helper to construct link URL based on link type
+      const constructLinkUrl = (ad) => {
+        if (!ad.buttonEnabled || !ad.buttonLinkType) return null;
+
+        switch (ad.buttonLinkType) {
+          case "external":
+            return ad.buttonLinkValue;
+          case "productType":
+            return `/collections/all/${ad.buttonLinkValue}`;
+          case "collection":
+            return `/collections/${ad.buttonLinkValue}`;
+          case "homepage":
+            return "/";
+          default:
+            return ad.buttonLinkValue;
+        }
+      };
+
+      // Format response for client-side rendering
+      const response = {
+        advertisement: {
+          id: ad.id,
+          name: ad.name,
+          status: ad.status,
+          size: ad.size,
+          desktopImage: ad.desktopImage,
+          mobileImage: ad.mobileImage,
+          buttonEnabled: ad.buttonEnabled,
+          buttonText: ad.buttonText,
+          buttonLinkUrl: constructLinkUrl(ad),
+          buttonBgColor: ad.buttonBgColor,
+          buttonTextColor: ad.buttonTextColor,
+          buttonTextSize: ad.buttonTextSize,
+          buttonPlacement: ad.buttonPlacement,
+          schedulingEnabled: ad.schedulingEnabled,
+          startDate: ad.startDate,
+          endDate: ad.endDate,
+        },
+      };
+
+      // Set cache headers (cache for 5 minutes, client handles schedule checking)
+      res.set("Cache-Control", "public, max-age=300");
+      res.json(response);
+    } catch (error) {
+      console.error("[App Proxy] Error fetching advertisement:", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
 export default router;

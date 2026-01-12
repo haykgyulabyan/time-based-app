@@ -173,6 +173,48 @@
       "outline": "Outline"
     }
   },
+  "Advertisement": {
+    "create": {
+      "title": "Create Advertisement"
+    },
+    "edit": {
+      "title": "Edit Advertisement",
+      "loadError": "Failed to load advertisement"
+    },
+    "form": {
+      "basicInfo": "Basic Information",
+      "name": "Name",
+      "namePlaceholder": "e.g., Holiday Sale Ad",
+      "nameHelpText": "Internal name for your advertisement",
+      "nameRequired": "Name is required",
+      "enableAd": "Enable this advertisement",
+      "mediaAndButton": "Media & Button",
+      "allowedSizes": "Allowed sizes: 1x1 (350x525px), 2x1 (716x525px), 3x1 (1078x525px), 4x1 (1434x525px)",
+      "size": "Advertisement Size",
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "uploadMedia": "Upload Media",
+      "clickToUpload": "Click to upload image",
+      "change": "Change",
+      "remove": "Remove",
+      "button": "Button",
+      "buttonText": "Button Text",
+      "buttonTextPlaceholder": "e.g., Shop Now",
+      "buttonLinkType": "Button Link Type",
+      "selectProductType": "Select Product Type",
+      "selectCollection": "Select Collection",
+      "backgroundColor": "Background Color",
+      "textColor": "Text Color",
+      "textSize": "Text Size",
+      "placement": "Placement",
+      "scheduling": "Scheduling",
+      "scheduleAd": "Schedule this advertisement",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "cancel": "Cancel",
+      "save": "Save Advertisement"
+    }
+  },
   "NotFound": {
     "heading": "Page not found",
     "description": "The page you're looking for doesn't exist"

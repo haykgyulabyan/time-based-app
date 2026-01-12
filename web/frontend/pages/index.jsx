@@ -127,6 +127,17 @@ export default function Dashboard() {
     refetchOnWindowFocus: false,
   });
 
+  // Fetch advertisements
+  const { data: advertisementData, isLoading: loadingAdvertisements } = useQuery({
+    queryKey: ["advertisements"],
+    queryFn: async () => {
+      const response = await authenticatedFetch("/api/advertisements");
+      if (!response.ok) return { advertisements: [] };
+      return await response.json();
+    },
+    refetchOnWindowFocus: false,
+  });
+
   // Delete announcement mutation
   const deleteAnnouncementMutation = useMutation({
     mutationFn: async (id) => {
@@ -195,9 +206,44 @@ export default function Dashboard() {
     },
   });
 
+  // Delete advertisement mutation
+  const deleteAdvertisementMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await authenticatedFetch(`/api/advertisements/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete");
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["advertisements"]);
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  // Duplicate advertisement mutation
+  const duplicateAdvertisementMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await authenticatedFetch(`/api/advertisements/${id}/duplicate`, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error("Failed to duplicate");
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["advertisements"]);
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
   const announcementBars = announcementData?.announcementBars || [];
   const sliderBanners = sliderData?.sliderBanners || [];
-  const isLoading = loadingAnnouncements || loadingSliders;
+  const advertisements = advertisementData?.advertisements || [];
+  const isLoading = loadingAnnouncements || loadingSliders || loadingAdvertisements;
 
   const getStatusBadge = (item) => {
     if (!item.status) {
@@ -340,7 +386,55 @@ export default function Dashboard() {
     </Popover>,
   ]);
 
-  const rows = [...announcementRows, ...sliderRows];
+  const advertisementRows = advertisements.map((ad) => [
+    ad.name,
+    <Badge key={`type-ad-${ad.id}`} tone="warning">Advertisement ({ad.size})</Badge>,
+    getStatusBadge(ad),
+    getScheduleText(ad),
+    <Popover
+      key={`popover-ad-${ad.id}`}
+      active={activePopover === `ad-${ad.id}`}
+      activator={
+        <Button
+          icon={MenuVerticalIcon}
+          variant="plain"
+          onClick={() => setActivePopover(activePopover === `ad-${ad.id}` ? null : `ad-${ad.id}`)}
+        />
+      }
+      onClose={() => setActivePopover(null)}
+    >
+      <ActionList
+        items={[
+          {
+            content: t("Dashboard.actions.edit"),
+            onAction: () => {
+              setActivePopover(null);
+              navigate(`/advertisements/${ad.id}`);
+            },
+          },
+          {
+            content: t("Dashboard.actions.duplicate"),
+            onAction: () => {
+              setActivePopover(null);
+              duplicateAdvertisementMutation.mutate(ad.id);
+            },
+          },
+          {
+            content: t("Dashboard.actions.delete"),
+            destructive: true,
+            onAction: () => {
+              setActivePopover(null);
+              if (confirm("Are you sure you want to delete this advertisement?")) {
+                deleteAdvertisementMutation.mutate(ad.id);
+              }
+            },
+          },
+        ]}
+      />
+    </Popover>,
+  ]);
+
+  const rows = [...announcementRows, ...sliderRows, ...advertisementRows];
 
   if (isLoading) {
     return (

@@ -10,6 +10,7 @@ import database from "./database.js";
 import PrivacyWebhookHandlers from "./privacy.js";
 import announcementBarsRoutes from "./routes/announcement-bars.js";
 import sliderBannersRoutes from "./routes/slider-banners.js";
+import advertisementsRoutes from "./routes/advertisements.js";
 import filesRoutes from "./routes/files.js";
 import appProxyRoutes from "./routes/app-proxy.js";
 
@@ -90,6 +91,7 @@ app.use("/api/*", shopify.validateAuthenticatedSession());
 // API routes
 app.use("/api/announcement-bars", announcementBarsRoutes);
 app.use("/api/slider-banners", sliderBannersRoutes);
+app.use("/api/advertisements", advertisementsRoutes);
 app.use("/api/files", filesRoutes);
 
 // GET /api/discounts - Fetch discount codes from Shopify

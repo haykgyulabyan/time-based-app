@@ -1,0 +1,70 @@
+{% comment %}
+  Time-based App - Advertisement Block
+
+  Each instance of this block displays one advertisement.
+  The ad ID is entered by the merchant in the theme editor settings.
+
+  Available advertisements are synced to shop metafields when created/updated in the app.
+{% endcomment %}
+
+{% assign ad_id = block.settings.advertisement_id %}
+{% assign available_ads = shop.metafields.time_based_app.advertisements.value %}
+
+<div
+  class="time-based-advertisement"
+  data-ad-id="{{ ad_id }}"
+  data-shop="{{ shop.permanent_domain }}"
+  id="time-based-ad-{{ block.id }}"
+>
+  {% if ad_id == blank %}
+    <div class="time-based-ad-placeholder">
+      <p style="margin: 0 0 8px 0; font-weight: 600;">Select an Advertisement</p>
+      <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">
+        Enter the advertisement ID in the block settings to display it here.
+      </p>
+      {% if available_ads and available_ads.size > 0 %}
+        <p style="margin: 0 0 8px 0; font-size: 13px; color: #374151;">Available advertisements:</p>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4b5563;">
+          {% for ad in available_ads %}
+            <li>ID: <strong>{{ ad.id }}</strong> - {{ ad.name }} ({{ ad.size }})</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p style="margin: 0; font-size: 13px; color: #9ca3af;">
+          No advertisements available. Create one in the Time-based App admin.
+        </p>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="time-based-ad-loading">
+      <p style="margin: 0; color: #6b7280; font-size: 14px;">Loading advertisement...</p>
+    </div>
+  {% endif %}
+</div>
+
+{{ 'advertisement.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'advertisement.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Time-Based Ad",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "advertisement_id",
+      "label": "Advertisement ID",
+      "info": "Enter the ID of the advertisement to display. View available ads in the Time-based App admin panel."
+    },
+    {
+      "type": "paragraph",
+      "content": "Create and manage advertisements in the Time-based App admin panel. Each advertisement has a unique ID shown in the admin."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Time-Based Ad"
+    }
+  ]
+}
+{% endschema %}
