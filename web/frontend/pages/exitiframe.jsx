@@ -1,20 +1,26 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
 
 export default function ExitIframe() {
-  const { search } = useLocation();
-
   useEffect(() => {
-    if (search) {
-      const params = new URLSearchParams(search);
-      const redirectUri = params.get("redirectUri");
+    const params = new URLSearchParams(window.location.search);
+    const redirectUri = params.get("redirectUri");
 
-      if (redirectUri) {
-        // Redirect the top-level window to break out of the iframe
-        window.top.location.href = decodeURIComponent(redirectUri);
+    if (redirectUri) {
+      const decodedUrl = decodeURIComponent(redirectUri);
+
+      // App Bridge v4 CDN exposes window.open that handles iframe escape
+      // The CDN script automatically handles cross-origin navigation
+      if (window.shopify) {
+        window.open(decodedUrl, "_top");
+      } else {
+        window.location.href = decodedUrl;
       }
     }
-  }, [search]);
+  }, []);
 
-  return null;
+  return (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      Redirecting...
+    </div>
+  );
 }

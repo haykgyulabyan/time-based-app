@@ -65,6 +65,51 @@ app.get(
   shopify.auth.callback(),
   shopify.redirectToShopifyOrAppRoot()
 );
+
+// Exit iframe handler - serves a page that uses App Bridge to redirect
+app.get("/exitiframe", (req, res) => {
+  const { redirectUri, shop, host } = req.query;
+  const apiKey = process.env.SHOPIFY_API_KEY;
+
+  res.set("Content-Type", "text/html");
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <script src="https://unpkg.com/@shopify/app-bridge@3/umd/index.js"></script>
+        <script>
+          (function() {
+            var redirectUri = "${redirectUri || ''}";
+            var host = "${host || ''}";
+            var apiKey = "${apiKey}";
+
+            if (!redirectUri) return;
+            var decodedUrl = decodeURIComponent(redirectUri);
+
+            // Initialize App Bridge v3 for redirect
+            var AppBridge = window['app-bridge'];
+            if (AppBridge && host) {
+              var app = AppBridge.createApp({
+                apiKey: apiKey,
+                host: host
+              });
+              var Redirect = AppBridge.actions.Redirect;
+              var redirect = Redirect.create(app);
+              redirect.dispatch(Redirect.Action.REMOTE, decodedUrl);
+            } else {
+              // Fallback
+              window.location.href = decodedUrl;
+            }
+          })();
+        </script>
+      </head>
+      <body>
+        <p>Redirecting...</p>
+      </body>
+    </html>
+  `);
+});
 app.post(
   shopify.config.webhooks.path,
   (req, res, next) => {
