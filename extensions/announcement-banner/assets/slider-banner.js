@@ -159,23 +159,8 @@
 
     sliderDiv.appendChild(slidesContainer);
 
-    // Add navigation dots if more than one slide
+    // Start autoplay if more than one slide
     if (slides.length > 1) {
-      const dotsContainer = document.createElement('div');
-      dotsContainer.className = 'time-based-slider__dots';
-
-      slides.forEach((_, index) => {
-        const dot = document.createElement('button');
-        dot.className = 'time-based-slider__dot';
-        dot.dataset.index = index;
-        dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
-        if (index === 0) dot.classList.add('active');
-        dot.addEventListener('click', () => goToSlide(sliderDiv, index));
-        dotsContainer.appendChild(dot);
-      });
-
-      sliderDiv.appendChild(dotsContainer);
-
       // Store slider state
       sliderDiv._currentIndex = 0;
       sliderDiv._isTransitioning = false;
@@ -281,7 +266,6 @@
     if (sliderDiv._isTransitioning) return;
 
     const slides = sliderDiv.querySelectorAll('.time-based-slider__slide');
-    const dots = sliderDiv.querySelectorAll('.time-based-slider__dot');
     const currentIndex = sliderDiv._currentIndex || 0;
 
     if (targetIndex === currentIndex) return;
@@ -306,7 +290,6 @@
     performTransition(sliderDiv, currentSlide, targetSlide, effect, () => {
       // Update active states
       slides.forEach((slide, i) => slide.classList.toggle('active', i === targetIndex));
-      dots.forEach((dot, i) => dot.classList.toggle('active', i === targetIndex));
 
       sliderDiv._currentIndex = targetIndex;
       sliderDiv._isTransitioning = false;
@@ -443,18 +426,12 @@
       }
 
       // Clone target media into stripe
-      // The clone must match the original slide's dimensions exactly to avoid zoom effect
       if (toMedia) {
         const clone = toMedia.cloneNode(true);
-        // Get the computed style of the original media to match exactly
-        const originalStyle = window.getComputedStyle(toMedia);
         clone.style.cssText = `
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: ${originalStyle.width};
-          height: ${originalStyle.height};
-          object-fit: ${originalStyle.objectFit || 'cover'};
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         `;
         inner.appendChild(clone);
       }

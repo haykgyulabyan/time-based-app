@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "00bc69250f5151480212e795b0d5d246"
+client_id = "786676fae625847fd0e2ebbbfa7d88a4"
 name = "Time-based app"
 application_url = "https://time-based-app.vercel.app"
 embedded = true
